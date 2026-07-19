@@ -1,0 +1,6 @@
+# Backend
+target/
+uploads/
+.idea/
+*.iml
+.env
