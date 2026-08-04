@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authStore'
 import { useUiStore } from '../store/uiStore'
 import { formatDateTime } from '../utils/date'
 import { pageMeta } from '../utils/page'
+import { invalidateStockRelatedQueries } from '../lib/queryClient'
 
 const STATUS_LABELS = {
   PENDING_PAYMENT: 'Aguardando pagamento',
@@ -348,6 +349,7 @@ export default function MyOrdersPage() {
     try {
       await api.post(`/api/orders/${order.id}/cancel`)
       await queryClient.invalidateQueries({ queryKey: ['my-orders'] })
+      invalidateStockRelatedQueries(queryClient)
       showToast({
         type: 'info',
         message: 'Pedido cancelado com sucesso.',

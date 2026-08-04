@@ -4,6 +4,7 @@ import com.ateliegg.config.AtelieProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -32,50 +33,79 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final RateLimitFilter rateLimitFilter;
     private final CustomUserDetailsService userDetailsService;
     private final AtelieProperties atelieProperties;
+    private final Environment environment;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        boolean swaggerEnabled = isSwaggerEnabled();
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(
-                                "/api/auth/**",
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
+                    auth.requestMatchers("/api/auth/**").permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/payments/config").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/shipping/**").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/orders/webhook/**").permitAll();
+                    auth.requestMatchers("/uploads/**").permitAll();
+
+                    // Catálogo público (sem rotas /admin) — regras admin ANTES de {id}
+                    auth.requestMatchers(HttpMethod.GET, "/api/products/admin/**")
+                            .hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
+                    auth.requestMatchers(HttpMethod.GET, "/api/products/filters").permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/products").permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/products/{id}").permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/cms/hero").permitAll();
+                    auth.requestMatchers(HttpMethod.PUT, "/api/cms/hero").hasAnyRole("ADMIN", "GERENTE");
+                    auth.requestMatchers(HttpMethod.POST, "/api/cms/hero/**").hasAnyRole("ADMIN", "GERENTE");
+                    auth.requestMatchers(HttpMethod.DELETE, "/api/cms/hero/**").hasAnyRole("ADMIN", "GERENTE");
+                    auth.requestMatchers(HttpMethod.PATCH, "/api/cms/hero/**").hasAnyRole("ADMIN", "GERENTE");
+
+                    if (swaggerEnabled) {
+                        auth.requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/api-docs/**",
-                                "/v3/api-docs/**",
-                                "/uploads/**"
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/payments/config").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/shipping/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/orders/number/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/orders/webhook/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/checkout/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/orders/my").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/orders/*/payment-status").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/orders/*/pay/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/orders/*/cancel").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/orders/*").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/orders").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA")
-                        .requestMatchers(HttpMethod.PATCH, "/api/orders/*/status").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA")
-                        .requestMatchers(HttpMethod.POST, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA")
-                        .requestMatchers(HttpMethod.PUT, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA")
-                        .requestMatchers(HttpMethod.DELETE, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA")
-                        .requestMatchers(HttpMethod.PATCH, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA")
-                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA")
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()
-                )
+                                "/v3/api-docs/**"
+                        ).permitAll();
+                    }
+
+                    auth.requestMatchers(HttpMethod.POST, "/api/checkout/**").authenticated();
+                    auth.requestMatchers(HttpMethod.GET, "/api/orders/my").authenticated();
+                    auth.requestMatchers(HttpMethod.GET, "/api/orders/*/payment-status").authenticated();
+                    auth.requestMatchers(HttpMethod.POST, "/api/orders/*/pay/**").authenticated();
+                    auth.requestMatchers(HttpMethod.POST, "/api/orders/*/cancel").authenticated();
+                    auth.requestMatchers(HttpMethod.GET, "/api/orders/number/**").authenticated();
+                    auth.requestMatchers(HttpMethod.GET, "/api/orders/*").authenticated();
+                    auth.requestMatchers(HttpMethod.GET, "/api/orders").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
+                    auth.requestMatchers(HttpMethod.PATCH, "/api/orders/*/status").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
+                    auth.requestMatchers(HttpMethod.POST, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
+                    auth.requestMatchers(HttpMethod.PUT, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
+                    auth.requestMatchers(HttpMethod.DELETE, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
+                    auth.requestMatchers(HttpMethod.PATCH, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
+                    auth.requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
+                    auth.requestMatchers("/api/users/**").hasRole("ADMIN");
+                    auth.anyRequest().authenticated();
+                })
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    private boolean isSwaggerEnabled() {
+        String appEnv = environment.getProperty("APP_ENV", "development").toLowerCase();
+        if (appEnv.equals("production") || appEnv.equals("prod")) {
+            return false;
+        }
+        return Boolean.parseBoolean(environment.getProperty("SWAGGER_ENABLED", "true"));
     }
 
     @Bean

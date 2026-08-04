@@ -131,18 +131,14 @@ export function ProductForm({ product, onSaved, onCancel }) {
   const uploadMainImage = async (productId, file) => {
     const formData = new FormData()
     formData.append('file', file)
-    const { data } = await api.post(`/api/products/${productId}/image/main`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    const { data } = await api.post(`/api/products/${productId}/image/main`, formData)
     return data
   }
 
   const uploadGalleryImage = async (productId, file) => {
     const formData = new FormData()
     formData.append('file', file)
-    const { data } = await api.post(`/api/products/${productId}/image/gallery`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    const { data } = await api.post(`/api/products/${productId}/image/gallery`, formData)
     return data
   }
 
@@ -333,19 +329,19 @@ export function ProductForm({ product, onSaved, onCancel }) {
         setSuccess('')
         saveMutation.mutate()
       }}
-      className="rounded-2xl border border-brand-pink/40 bg-brand-pink/5 p-6 shadow-sm"
+      className="admin-card"
     >
-      <h2 className="font-serif text-xl font-semibold text-brand-charcoal">
+      <h2 className="font-display text-xl font-semibold text-neon-text">
         {currentProduct?.id ? 'Editar produto' : 'Cadastrar produto'}
       </h2>
 
       {error && (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div className="mt-4 admin-alert-err">
           {error}
         </div>
       )}
       {success && (
-        <div className="mt-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+        <div className="mt-4 admin-alert-ok">
           {success}
         </div>
       )}
@@ -399,7 +395,7 @@ export function ProductForm({ product, onSaved, onCancel }) {
               type="checkbox"
               checked={form.active}
               onChange={(e) => updateField('active', e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-neon-line/15"
             />
             Produto ativo na loja
           </label>
@@ -454,13 +450,13 @@ export function ProductForm({ product, onSaved, onCancel }) {
         />
 
         <fieldset className="admin-fieldset">
-          <legend className="px-1 text-sm font-semibold text-brand-charcoal">
+          <legend className="px-1 text-sm font-semibold text-neon-text">
             Imagens do carrossel (detalhe do produto)
           </legend>
 
           <div className="mt-3 space-y-4">
             {gallerySlots.map((slot, index) => (
-              <div key={slot.id} className="rounded-lg border border-gray-200 bg-gray-50/50 p-3">
+              <div key={slot.id} className="rounded-lg border border-gray-200 bg-neon-card/40/50 p-3">
                 <p className="mb-2 text-xs font-medium text-brand-muted">Imagem {index + 1}</p>
                 <ImageUploadBox
                   compact
@@ -481,7 +477,7 @@ export function ProductForm({ product, onSaved, onCancel }) {
                 { id: Date.now(), file: null, preview: null },
               ])
             }
-            className="mt-4 w-full rounded-lg border border-dashed border-gray-300 bg-gray-50 py-3 text-sm font-medium text-brand-charcoal transition hover:border-brand-pink hover:bg-brand-pink/20"
+            className="mt-4 w-full rounded-lg border border-dashed border-neon-line/15 bg-neon-card/40 py-3 text-sm font-medium text-neon-text transition hover:border-brand-pink hover:bg-brand-pink/20"
           >
             + Adicionar imagem ao carrossel
           </button>
@@ -498,7 +494,7 @@ export function ProductForm({ product, onSaved, onCancel }) {
       {/* Cores */}
       <div className="mt-8">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-brand-charcoal">Cores *</h3>
+          <h3 className="font-semibold text-neon-text">Cores *</h3>
           <button
             type="button"
             onClick={() => addListItem('colors', emptyColor)}
@@ -539,7 +535,7 @@ export function ProductForm({ product, onSaved, onCancel }) {
       {/* Especificações */}
       <div className="mt-8">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-brand-charcoal">Especificações</h3>
+          <h3 className="font-semibold text-neon-text">Especificações</h3>
           <button
             type="button"
             onClick={() => addListItem('specifications', emptySpec)}
@@ -582,7 +578,7 @@ export function ProductForm({ product, onSaved, onCancel }) {
       {/* Estoque */}
       <div className="mt-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-semibold text-brand-charcoal">Estoque</h3>
+          <h3 className="font-semibold text-neon-text">Estoque</h3>
           <button
             type="button"
             onClick={generateStock}

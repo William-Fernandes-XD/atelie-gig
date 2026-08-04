@@ -32,7 +32,7 @@ function UserPhoto({ user, size = 'md' }) {
 
   return (
     <span
-      className={`${sizeClass} flex items-center justify-center rounded-full bg-brand-pink/30 font-serif text-lg font-semibold text-brand-purple ring-2 ring-brand-pink/40`}
+      className={`${sizeClass} flex items-center justify-center rounded-full bg-brand-pink/30 font-display text-lg font-semibold text-brand-purple ring-2 ring-brand-pink/40 dark:text-brand-pink dark:ring-neon-line/20`}
     >
       {user?.name?.charAt(0)?.toUpperCase() || '?'}
     </span>
@@ -67,11 +67,11 @@ function UserDetailModal({ userId, onClose }) {
   if (!userId) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-brand-pink/40 bg-white p-6 shadow-xl">
+    <div className="admin-modal-backdrop">
+      <div className="admin-modal max-w-lg">
         <div className="flex items-start justify-between gap-4">
-          <h2 className="font-serif text-2xl font-bold">Detalhes do usuário</h2>
-          <button type="button" onClick={onClose} className="text-brand-muted hover:text-brand-charcoal">
+          <h2 className="font-display text-2xl font-bold text-neon-text">Detalhes do usuário</h2>
+          <button type="button" onClick={onClose} className="text-neon-muted hover:text-neon-text">
             ✕
           </button>
         </div>
@@ -85,8 +85,8 @@ function UserDetailModal({ userId, onClose }) {
             <div className="flex items-center gap-4">
               <UserPhoto user={user} size="lg" />
               <div>
-                <p className="font-serif text-xl font-semibold">{user.name}</p>
-                <p className="text-sm text-brand-muted">{user.email}</p>
+                <p className="font-display text-xl font-semibold text-neon-text">{user.name}</p>
+                <p className="text-sm text-neon-muted">{user.email}</p>
                 <p className="mt-1 text-sm">
                   Status:{' '}
                   <span className={user.active ? 'text-green-600' : 'text-red-500'}>
@@ -117,8 +117,8 @@ function UserDetailModal({ userId, onClose }) {
               </div>
             </dl>
 
-            <div className="rounded-xl border border-brand-pink/30 bg-brand-pink/10 p-4">
-              <label className="block text-sm font-medium">Alterar papel</label>
+            <div className="rounded-xl border border-brand-pink/30 bg-brand-pink/10 p-4 dark:border-neon-line/10 dark:bg-white/[0.04]">
+              <label className="block text-sm font-medium text-neon-text">Alterar papel</label>
               <div className="mt-2 flex flex-wrap gap-2">
                 <select
                   value={selectedRole ?? user.role}
@@ -174,13 +174,13 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-bold">Usuários</h1>
-      <p className="mt-1 text-sm text-brand-muted">Visualize dados, foto e altere o papel de cada usuário.</p>
+      <h1 className="admin-page-title">Usuários</h1>
+      <p className="admin-page-sub">Visualize dados, foto e altere o papel de cada usuário.</p>
 
       {isLoading ? (
-        <p className="mt-6">Carregando...</p>
+        <p className="mt-6 text-neon-muted">Carregando...</p>
       ) : error ? (
-        <p className="mt-6 text-red-500">Erro ao carregar usuários.</p>
+        <p className="mt-6 admin-alert-err">Erro ao carregar usuários.</p>
       ) : users.length === 0 ? (
         <p className="mt-8 admin-table-empty">Nenhum usuário encontrado.</p>
       ) : (
@@ -203,19 +203,15 @@ export default function AdminUsers() {
                     <td>
                       <UserPhoto user={u} />
                     </td>
-                    <td className="font-medium">{u.name}</td>
-                    <td>{u.email}</td>
+                    <td className="font-medium text-neon-text">{u.name}</td>
+                    <td className="text-neon-muted">{u.email}</td>
                     <td>
-                      <span className="inline-flex rounded-full bg-brand-pink/40 px-2.5 py-1 text-xs font-medium">
+                      <span className="admin-badge">
                         {ROLE_LABELS[u.role] || u.role}
                       </span>
                     </td>
                     <td>
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                          u.active ? 'bg-brand-pink/50 text-brand-charcoal' : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
+                      <span className={u.active ? 'admin-badge' : 'admin-badge-muted'}>
                         {u.active ? 'Ativo' : 'Inativo'}
                       </span>
                     </td>
@@ -223,7 +219,7 @@ export default function AdminUsers() {
                       <button
                         type="button"
                         onClick={() => setSelectedUserId(u.id)}
-                        className="rounded-full bg-brand-pink/30 px-3 py-1 text-xs font-medium text-brand-charcoal hover:bg-brand-pink/50"
+                        className="admin-btn-soft"
                       >
                         Ver detalhes
                       </button>

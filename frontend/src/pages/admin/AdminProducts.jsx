@@ -104,8 +104,8 @@ export default function AdminProducts() {
     <div>
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-3xl font-bold text-brand-charcoal">Produtos</h1>
-          <p className="mt-2 text-sm text-brand-muted">
+          <h1 className="admin-page-title">Produtos</h1>
+          <p className="admin-page-sub">
             Cadastre vestidos, blusas, calças e gerencie preços e estoque.
           </p>
         </div>
@@ -117,7 +117,7 @@ export default function AdminProducts() {
       </div>
 
       {message && (
-        <div className="mb-4 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">{message}</div>
+        <div className="mb-4 admin-alert-ok">{message}</div>
       )}
 
       {showForm && (
@@ -222,7 +222,7 @@ export default function AdminProducts() {
                       <button
                         type="button"
                         onClick={() => openEdit(p.id)}
-                        className="block h-20 w-16 overflow-hidden rounded-xl bg-brand-pink/20 shadow-sm ring-1 ring-brand-pink/40 transition hover:ring-brand-pink-dark"
+                        className="block h-20 w-16 overflow-hidden rounded-xl bg-brand-pink/20 shadow-sm ring-1 ring-brand-pink/40 transition hover:ring-brand-pink-dark dark:ring-neon-line/20"
                         title={`Ver ${p.title}`}
                       >
                         <img
@@ -234,30 +234,28 @@ export default function AdminProducts() {
                       </button>
                     </td>
                     <td>
-                      <p className="font-medium text-brand-charcoal">{p.title}</p>
+                      <p className="font-medium text-neon-text">{p.title}</p>
                       {p.slug && (
-                        <p className="mt-0.5 text-xs text-brand-muted">{p.slug}</p>
+                        <p className="mt-0.5 text-xs text-neon-muted">{p.slug}</p>
                       )}
                     </td>
                     <td>
-                      <span className="inline-flex rounded-full bg-brand-pink/40 px-2.5 py-1 text-xs font-medium text-brand-charcoal">
+                      <span className="admin-badge">
                         {p.categoryName || '—'}
                       </span>
                     </td>
-                    <td className="font-semibold text-brand-purple">
+                    <td className="font-semibold text-brand-purple dark:text-brand-pink">
                       {formatCurrency(p.price)}
                     </td>
-                    <td className="text-brand-muted">
+                    <td className="text-neon-muted">
                       {formatCurrency(p.wholesalePrice)}
                     </td>
                     <td>
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                          p.active ? 'bg-brand-pink/50 text-brand-charcoal' : 'bg-gray-100 text-gray-600'
-                        }`}
+                        className={p.active ? 'admin-badge' : 'admin-badge-muted'}
                       >
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${p.active ? 'bg-brand-pink-dark' : 'bg-gray-400'}`}
+                          className={`h-1.5 w-1.5 rounded-full ${p.active ? 'bg-brand-pink-dark dark:bg-brand-pink' : 'bg-neon-muted'}`}
                           aria-hidden
                         />
                         {p.active ? 'Ativo' : 'Inativo'}
@@ -268,7 +266,7 @@ export default function AdminProducts() {
                         <button
                           type="button"
                           onClick={() => openEdit(p.id)}
-                          className="rounded-full bg-brand-pink/30 px-3 py-1 text-xs font-medium hover:bg-brand-pink/50"
+                          className="admin-btn-soft"
                         >
                           Editar
                         </button>
@@ -280,7 +278,7 @@ export default function AdminProducts() {
                                 deactivateMutation.mutate(p.id)
                               }
                             }}
-                            className="rounded-full px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            className="admin-btn-danger"
                           >
                             Desativar
                           </button>

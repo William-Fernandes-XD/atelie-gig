@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.security.SecureRandom;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Component
@@ -30,15 +32,69 @@ public class AdminBootstrap implements CommandLineRunner {
     @Override
     public void run(String... args) {
         String adminEmail = properties.getAdmin().getEmail();
-        Optional<User> existing = userRepository.findByEmail(adminEmail);
+        if (!StringUtils.hasText(adminEmail)) {
+            log.warn("ADMIN_EMAIL vazio — pulando bootstrap do administrador.");
+            return;
+        }
+        adminEmail = adminEmail.trim().toLowerCase(Locale.ROOT);
 
-        if (existing.isPresent()) {
-            if (properties.getAdmin().isResetPassword() && StringUtils.hasText(properties.getAdmin().getPassword())) {
-                User admin = existing.get();
-                admin.setPassword(passwordEncoder.encode(properties.getAdmin().getPassword()));
+        List<User> admins = userRepository.findByRole(UserRole.ADMIN);
+        Optional<User> byNewEmail = userRepository.findByEmail(adminEmail);
+
+        // Já existe admin com o e-mail configurado
+        if (byNewEmail.isPresent() && byNewEmail.get().getRole() == UserRole.ADMIN) {
+            maybeResetPassword(byNewEmail.get(), adminEmail);
+            return;
+        }
+
+        // Existe admin com e-mail antigo → migra para ADMIN_EMAIL
+        if (!admins.isEmpty()) {
+            User admin = admins.get(0);
+
+            if (byNewEmail.isPresent() && !byNewEmail.get().getId().equals(admin.getId())) {
+                // O e-mail novo já está em outra conta (ex.: cliente). Promove essa conta a ADMIN
+                // e rebaixa o admin antigo para CLIENTE, para não perder o login.
+                User target = byNewEmail.get();
+                String oldAdminEmail = admin.getEmail();
+                admin.setRole(UserRole.CLIENTE);
                 userRepository.save(admin);
-                log.warn(" Senha do administrador {} redefinida via ADMIN_RESET_PASSWORD.", adminEmail);
+
+                target.setRole(UserRole.ADMIN);
+                if (StringUtils.hasText(properties.getAdmin().getName())) {
+                    target.setName(properties.getAdmin().getName());
+                }
+                maybeResetPassword(target, adminEmail);
+                userRepository.save(target);
+                log.warn(" Admin transferido para {} (conta anterior {} virou CLIENTE).", adminEmail, oldAdminEmail);
+                return;
             }
+
+            String oldEmail = admin.getEmail();
+            if (!adminEmail.equalsIgnoreCase(oldEmail)) {
+                admin.setEmail(adminEmail);
+                if (StringUtils.hasText(properties.getAdmin().getName())) {
+                    admin.setName(properties.getAdmin().getName());
+                }
+                maybeResetPassword(admin, adminEmail);
+                userRepository.save(admin);
+                log.warn(" E-mail do administrador atualizado: {} → {}", oldEmail, adminEmail);
+                return;
+            }
+
+            maybeResetPassword(admin, adminEmail);
+            return;
+        }
+
+        // Nenhum admin ainda → cria
+        if (byNewEmail.isPresent()) {
+            User user = byNewEmail.get();
+            user.setRole(UserRole.ADMIN);
+            if (StringUtils.hasText(properties.getAdmin().getName())) {
+                user.setName(properties.getAdmin().getName());
+            }
+            maybeResetPassword(user, adminEmail);
+            userRepository.save(user);
+            log.warn(" Conta {} promovida a ADMINISTRADOR.", adminEmail);
             return;
         }
 
@@ -67,6 +123,14 @@ public class AdminBootstrap implements CommandLineRunner {
             log.warn(" Dica: defina ADMIN_PASSWORD no .env para usar uma senha fixa.");
         }
         log.warn("================================================================");
+    }
+
+    private void maybeResetPassword(User admin, String adminEmail) {
+        if (properties.getAdmin().isResetPassword() && StringUtils.hasText(properties.getAdmin().getPassword())) {
+            admin.setPassword(passwordEncoder.encode(properties.getAdmin().getPassword()));
+            userRepository.save(admin);
+            log.warn(" Senha do administrador {} redefinida via ADMIN_RESET_PASSWORD.", adminEmail);
+        }
     }
 
     private String generateStrongPassword(int length) {

@@ -1,0 +1,15 @@
+# Override para desenvolvimento LOCAL com Postgres no Docker (sem Supabase).
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml --profile local-db up -d --build
+#
+# Isso sobe o container postgres e aponta o backend para ele.
+
+services:
+  backend:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_SSL_MODE: disable

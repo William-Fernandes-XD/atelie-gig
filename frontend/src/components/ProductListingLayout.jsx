@@ -18,14 +18,14 @@ function FilterSection({ title, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <div className="border-b border-gray-100 py-4 last:border-b-0">
+    <div className="border-b border-neon-line/10 py-4 last:border-b-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between text-left text-sm font-semibold text-brand-charcoal"
+        className="flex w-full items-center justify-between text-left text-sm font-semibold text-neon-text"
       >
         {title}
-        <span className="text-brand-muted">{open ? '−' : '+'}</span>
+        <span className="text-neon-muted">{open ? '−' : '+'}</span>
       </button>
       {open && <div className="mt-3 space-y-2">{children}</div>}
     </div>
@@ -34,12 +34,12 @@ function FilterSection({ title, children, defaultOpen = true }) {
 
 function CheckboxOption({ label, checked, onChange }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-sm text-brand-charcoal hover:text-brand-purple">
+    <label className="flex cursor-pointer items-center gap-2 text-sm text-neon-muted hover:text-neon-cyan">
       <input
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="h-4 w-4 rounded border-gray-300 text-brand-purple focus:ring-brand-purple/30"
+        className="h-4 w-4 rounded border-neon-line/20 bg-neon-bg text-neon-pink focus:ring-neon-pink/30"
       />
       <span className="flex-1 truncate">{label}</span>
     </label>
@@ -226,6 +226,7 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
       const params = fixedCategoryId ? `?categoryId=${fixedCategoryId}` : ''
       return (await api.get(`/api/products/filters${params}`)).data
     },
+    staleTime: 1000 * 60 * 10,
   })
 
   const handleCategoryToggle = (categoryId) => {
@@ -254,9 +255,9 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
   }
 
   return (
-    <aside className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+    <aside className="rounded-xl border border-neon-pink/25 bg-neon-surface/90 p-4 shadow-neon">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-serif text-lg font-semibold text-brand-charcoal">Filtros</h2>
+        <h2 className="font-display text-lg font-semibold text-white">Filtros</h2>
         {hasActiveFilters && (
           <button
             type="button"
@@ -272,7 +273,7 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-brand-charcoal focus:border-brand-purple/40 focus:outline-none focus:ring-2 focus:ring-brand-purple/20"
+          className="w-full rounded-lg border border-neon-line/15 px-3 py-2 text-sm text-neon-text focus:border-neon-pink focus:outline-none focus:ring-2 focus:ring-neon-pink/20"
         >
           <option value="">Mais recentes</option>
           <option value="price,asc">Menor preço</option>
@@ -283,12 +284,12 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
 
       <FilterSection title="Preço">
         {options?.minPrice != null && options?.maxPrice != null && (
-          <p className="mb-2 text-xs text-brand-muted">
+          <p className="mb-2 text-xs text-neon-muted">
             Faixa disponível: {formatCurrency(options.minPrice)} – {formatCurrency(options.maxPrice)}
           </p>
         )}
         <div className="grid grid-cols-2 gap-2">
-          <label className="text-xs text-brand-muted">
+          <label className="text-xs text-neon-muted">
             De (R$)
             <input
               type="number"
@@ -297,10 +298,10 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
               value={localMinPrice}
               onChange={(e) => setLocalMinPrice(e.target.value)}
               placeholder="0"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-brand-charcoal focus:border-brand-purple/40 focus:outline-none focus:ring-2 focus:ring-brand-purple/20"
+              className="mt-1 w-full rounded-lg border border-neon-line/15 px-2 py-1.5 text-sm text-neon-text focus:border-neon-pink focus:outline-none focus:ring-2 focus:ring-neon-pink/20"
             />
           </label>
-          <label className="text-xs text-brand-muted">
+          <label className="text-xs text-neon-muted">
             Até (R$)
             <input
               type="number"
@@ -309,7 +310,7 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
               value={localMaxPrice}
               onChange={(e) => setLocalMaxPrice(e.target.value)}
               placeholder="999"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-brand-charcoal focus:border-brand-purple/40 focus:outline-none focus:ring-2 focus:ring-brand-purple/20"
+              className="mt-1 w-full rounded-lg border border-neon-line/15 px-2 py-1.5 text-sm text-neon-text focus:border-neon-pink focus:outline-none focus:ring-2 focus:ring-neon-pink/20"
             />
           </label>
         </div>
@@ -325,7 +326,7 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
             <button
               type="button"
               onClick={clearPriceFilter}
-              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-brand-muted hover:border-brand-pink"
+              className="rounded-lg border border-neon-line/15 px-3 py-1.5 text-xs text-neon-muted hover:border-neon-pink"
             >
               Limpar
             </button>
@@ -335,7 +336,7 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
 
       <FilterSection title="Categorias">
         {!options?.categories?.length ? (
-          <p className="text-xs text-brand-muted">Nenhuma categoria</p>
+          <p className="text-xs text-neon-muted">Nenhuma categoria</p>
         ) : (
           options.categories.map((cat) => {
             const checked = selectedCategoryIds.includes(String(cat.id))
@@ -353,7 +354,7 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
 
       <FilterSection title="Cores">
         {!options?.colors?.length ? (
-          <p className="text-xs text-brand-muted">Nenhuma cor disponível</p>
+          <p className="text-xs text-neon-muted">Nenhuma cor disponível</p>
         ) : (
           options.colors.map((color) => (
             <CheckboxOption
@@ -368,7 +369,7 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
 
       <FilterSection title="Tamanho">
         {!options?.sizes?.length ? (
-          <p className="text-xs text-brand-muted">Nenhum tamanho disponível</p>
+          <p className="text-xs text-neon-muted">Nenhum tamanho disponível</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {options.sizes.map((size) => {
@@ -381,7 +382,7 @@ function ProductFiltersPanel({ fixedCategoryId = null }) {
                   className={`min-w-[2.25rem] rounded-md border px-2 py-1 text-xs font-medium transition ${
                     active
                       ? 'border-brand-purple bg-brand-purple text-white'
-                      : 'border-gray-200 bg-white text-brand-charcoal hover:border-brand-pink'
+                      : 'border-neon-line/15 bg-neon-surface text-neon-text hover:border-neon-pink'
                   }`}
                 >
                   {size}
@@ -424,6 +425,7 @@ export function ProductListingLayout({
       (await api.get(`/api/products?${buildApiParams(pageParam)}`)).data,
     getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.number + 1),
     initialPageParam: 0,
+    staleTime: 1000 * 60 * 5,
   })
 
   const products = data?.pages.flatMap((page) => page.content) || []
@@ -438,7 +440,7 @@ export function ProductListingLayout({
           <button
             type="button"
             onClick={() => setMobileFiltersOpen(true)}
-            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-brand-charcoal shadow-sm"
+            className="rounded-lg border border-neon-line/15 bg-neon-surface px-4 py-2 text-sm font-medium text-neon-text shadow-sm"
           >
             Filtrar
             {activeFilterCount > 0 && (
@@ -447,7 +449,7 @@ export function ProductListingLayout({
               </span>
             )}
           </button>
-          <p className="text-sm text-brand-muted">
+          <p className="text-sm text-neon-muted">
             {products.length} de {total}
           </p>
         </div>
@@ -461,20 +463,20 @@ export function ProductListingLayout({
 
           <div className="min-w-0 flex-1">
             <div className="mb-4 hidden items-center justify-between lg:flex">
-              <p className="text-sm text-brand-muted">
+              <p className="text-sm text-neon-muted">
                 Exibindo {products.length} de {total} produto{total !== 1 ? 's' : ''}
               </p>
             </div>
 
             {isLoading ? (
-              <p className="py-16 text-center text-brand-muted">{loadingMessage}</p>
+              <p className="py-16 text-center text-neon-muted">{loadingMessage}</p>
             ) : isError ? (
               <div className="rounded-xl border border-red-200 bg-red-50 py-16 text-center">
                 <p className="text-red-600">Não foi possível carregar os produtos. Tente recarregar a página.</p>
               </div>
             ) : products.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center">
-                <p className="text-brand-muted">{emptyMessage}</p>
+              <div className="rounded-xl border border-dashed border-neon-line/15 py-16 text-center">
+                <p className="text-neon-muted">{emptyMessage}</p>
                 {hasActiveFilters && (
                   <button
                     type="button"
@@ -519,10 +521,10 @@ export function ProductListingLayout({
             onClick={() => setMobileFiltersOpen(false)}
             aria-label="Fechar filtros"
           />
-          <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl">
+          <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-neon-surface p-4 shadow-xl">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-serif text-lg font-semibold">Filtros</h2>
-              <button type="button" onClick={() => setMobileFiltersOpen(false)} className="text-brand-muted">
+              <button type="button" onClick={() => setMobileFiltersOpen(false)} className="text-neon-muted">
                 Fechar
               </button>
             </div>

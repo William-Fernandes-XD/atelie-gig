@@ -3,10 +3,12 @@ import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import api from '../api/client'
 import { useCartStore } from '../store/cartStore'
+import { useUiStore } from '../store/uiStore'
 
 export default function ProductPage() {
   const { id } = useParams()
   const addItem = useCartStore((s) => s.addItem)
+  const showToast = useUiStore((s) => s.showToast)
   const [selectedColor, setSelectedColor] = useState('')
   const [selectedSize, setSelectedSize] = useState('')
   const [quantity, setQuantity] = useState(1)
@@ -17,6 +19,11 @@ export default function ProductPage() {
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: async () => (await api.get(`/api/products/${id}`)).data,
+    // Estoque muda com compras — não usar cache longo
+    staleTime: 15_000,
+    gcTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
   })
 
   if (isLoading) return <p className="p-10 text-center">Carregando...</p>
@@ -51,15 +58,32 @@ export default function ProductPage() {
 
   const handleAddToCart = () => {
     if (!selectedColor || !selectedSize) {
-      alert('Selecione cor e tamanho.')
+      showToast({
+        type: 'warn',
+        title: 'Quase lá',
+        message: 'Selecione a cor e o tamanho para continuar.',
+        durationMs: 3500,
+      })
       return
     }
     if (availableQty < quantity) {
-      alert('Quantidade indisponível em estoque.')
+      showToast({
+        type: 'error',
+        title: 'Estoque insuficiente',
+        message: 'A quantidade pedida não está disponível neste momento.',
+        durationMs: 4000,
+      })
       return
     }
     addItem(product, selectedColor, selectedSize, quantity)
-    alert('Produto adicionado ao carrinho!')
+    showToast({
+      type: 'success',
+      title: 'Adicionado ao carrinho',
+      message: `${product.title} · ${selectedColor} / ${selectedSize}`,
+      actionLabel: 'Ver carrinho',
+      actionTo: '/carrinho',
+      durationMs: 4500,
+    })
   }
 
   return (

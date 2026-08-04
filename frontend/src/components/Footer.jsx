@@ -1,14 +1,13 @@
 import { Link } from 'react-router-dom'
 import { Logo } from './Logo'
-
-const WHATSAPP_NUMBER = '5562981451856'
-const WHATSAPP_DISPLAY = '(62) 98145-1856'
-const INSTAGRAM_HANDLE = '@gig-modafeminina'
-const INSTAGRAM_URL = 'https://instagram.com/gig-modafeminina'
-const ADDRESS = 'Rua Serra Dourada — 74573-320, Goiânia/GO'
-
-const MAP_EMBED =
-  'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3822.8364582477657!2d-49.28326952508313!3d-16.6349749841295!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x935ef37c44bc701b%3A0x9087dc9d81c1c0ed!2sR.%20Serra%20Dourada%2C%20484%20-%20Jardim%20Diamantina%2C%20Goi%C3%A2nia%20-%20GO%2C%2074573-320!5e0!3m2!1spt-BR!2sbr!4v1783636074871!5m2!1spt-BR!2sbr'
+import {
+  INSTAGRAM_HANDLE,
+  INSTAGRAM_URL,
+  LOCATION,
+  WHATSAPP_DISPLAY,
+  WHATSAPP_NUMBER,
+  WHATSAPP_URL,
+} from '../constants/contact'
 
 function WhatsAppIcon({ className = 'h-6 w-6' }) {
   return (
@@ -37,50 +36,50 @@ function PinIcon({ className = 'h-5 w-5' }) {
 
 export function Footer() {
   return (
-    <footer className="mt-auto">
-      <div className="bg-brand-pink text-brand-charcoal">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-14">
+    <footer className="mt-auto border-t border-brand-pink/40 dark:border-neon-line/10">
+      <div className="relative overflow-hidden bg-brand-pink text-brand-charcoal dark:bg-neon-surface dark:text-neon-text">
+        <div className="pointer-events-none absolute -left-20 top-0 h-48 w-48 rounded-full bg-white/40 blur-3xl dark:bg-white/[0.04]" />
+        <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-brand-purple/20 blur-3xl dark:bg-white/[0.03]" />
+        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-14">
           <div className="grid gap-10 lg:grid-cols-12 lg:gap-8">
-            {/* Sobre nós + logo */}
             <div className="lg:col-span-5">
-              <div className="mb-6 inline-flex rounded-2xl bg-white px-4 py-3 shadow-sm">
+              <div className="mb-6 inline-flex rounded-2xl border border-white/60 bg-white px-4 py-3 shadow-sm dark:border-neon-line/15 dark:bg-neon-bg">
                 <Logo size="sm" />
               </div>
-              <h2 className="font-serif text-2xl font-bold text-brand-charcoal">
+              <h2 className="font-display text-2xl font-bold text-brand-charcoal dark:text-neon-text neon-glow-text">
                 Moda Feminina em Goiânia
               </h2>
-              <h3 className="mt-6 text-sm font-semibold uppercase tracking-wider text-brand-charcoal/70">
+              <h3 className="mt-6 text-sm font-semibold uppercase tracking-wider text-brand-charcoal/70 dark:text-neon-muted">
                 Sobre nós
               </h3>
-              <p className="mt-3 text-sm leading-relaxed text-brand-charcoal/80">
+              <p className="mt-3 text-sm leading-relaxed text-brand-charcoal/80 dark:text-neon-muted">
                 Somos uma empresa com a sede localizada em Goiânia, com o maior foco na produção de
                 vestidos longos e curtos. Também produzimos blusinhas e calças. Tudo pelo preço mais
                 acessível do Estado.
               </p>
             </div>
 
-            {/* Fale conosco */}
             <div className="lg:col-span-4">
-              <h3 className="text-lg font-bold text-brand-charcoal">
+              <h3 className="text-lg font-bold text-brand-charcoal dark:text-neon-text">
                 Fale Conosco
-                <span className="mt-2 block h-0.5 w-12 rounded-full bg-white" />
+                <span className="mt-2 block h-0.5 w-12 rounded-full bg-white dark:bg-gradient-to-r dark:from-brand-pink dark:to-brand-purple" />
               </h3>
 
               <div className="mt-6 space-y-4">
                 <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                  href={WHATSAPP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm transition hover:shadow-md"
+                  className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm transition hover:shadow-md dark:border dark:border-neon-line/10 dark:bg-neon-bg/80"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-white">
                     <WhatsAppIcon className="h-7 w-7" />
                   </span>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-neon-muted">
                       WhatsApp
                     </p>
-                    <p className="text-lg font-bold text-brand-charcoal">{WHATSAPP_DISPLAY}</p>
+                    <p className="text-lg font-bold text-brand-charcoal dark:text-neon-text">{WHATSAPP_DISPLAY}</p>
                   </div>
                 </a>
 
@@ -88,49 +87,48 @@ export function Footer() {
                   href={INSTAGRAM_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm transition hover:shadow-md"
+                  className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm transition hover:shadow-md dark:border dark:border-neon-line/10 dark:bg-neon-bg/80"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-pink-dark text-brand-charcoal">
                     <InstagramIcon className="h-7 w-7" />
                   </span>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted dark:text-neon-muted">
                       Instagram
                     </p>
-                    <p className="text-lg font-bold text-brand-charcoal">{INSTAGRAM_HANDLE}</p>
+                    <p className="text-lg font-bold text-brand-charcoal dark:text-neon-text">{INSTAGRAM_HANDLE}</p>
                   </div>
                 </a>
 
-                <div className="flex gap-3 rounded-2xl bg-white p-4 shadow-sm">
-                  <span className="mt-0.5 shrink-0 text-brand-pink-dark">
+                <div className="flex gap-3 rounded-2xl bg-white p-4 shadow-sm dark:border dark:border-neon-line/10 dark:bg-neon-bg/80">
+                  <span className="mt-0.5 shrink-0 text-brand-pink-dark dark:text-brand-pink">
                     <PinIcon />
                   </span>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
-                      Endereço
+                    <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted dark:text-neon-muted">
+                      Localização
                     </p>
-                    <p className="mt-1 text-sm leading-relaxed text-brand-charcoal/80">{ADDRESS}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-brand-charcoal/80 dark:text-neon-muted">{LOCATION}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Card Instagram */}
             <div className="lg:col-span-3">
-              <div className="flex h-full flex-col items-center justify-center rounded-2xl bg-white p-6 text-center shadow-sm">
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-pink">
-                  <InstagramIcon className="h-8 w-8 text-brand-charcoal" />
+              <div className="flex h-full flex-col items-center justify-center rounded-2xl bg-white p-6 text-center shadow-sm dark:border dark:border-neon-line/15 dark:bg-neon-bg/70">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-pink dark:bg-white/10">
+                  <InstagramIcon className="h-8 w-8 text-brand-charcoal dark:text-brand-pink" />
                 </span>
-                <p className="mt-4 font-serif text-lg font-bold text-brand-charcoal">Siga a GIG</p>
-                <p className="mt-2 text-sm text-brand-muted">
+                <p className="mt-4 font-display text-lg font-bold text-brand-charcoal dark:text-neon-text">Siga a GIG</p>
+                <p className="mt-2 text-sm text-brand-muted dark:text-neon-muted">
                   Acompanhe novidades, looks e lançamentos no nosso Instagram!
                 </p>
-                <p className="mt-3 text-sm font-semibold text-brand-charcoal">{INSTAGRAM_HANDLE}</p>
+                <p className="mt-3 text-sm font-semibold text-brand-charcoal dark:text-brand-pink">{INSTAGRAM_HANDLE}</p>
                 <a
                   href={INSTAGRAM_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-brand-charcoal px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-charcoal/90"
+                  className="btn-primary mt-5 inline-flex items-center gap-2"
                 >
                   <InstagramIcon className="h-4 w-4" />
                   Acessar perfil
@@ -141,40 +139,23 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Mapa */}
-      <div className="bg-brand-pink px-4 pb-8 pt-2 sm:px-6">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-2xl bg-white p-2 shadow-md">
-          <div className="relative aspect-[16/7] w-full overflow-hidden rounded-xl sm:aspect-[21/9]">
-            <iframe
-              src={MAP_EMBED}
-              title="Localização GIG — Moda Feminina"
-              className="absolute inset-0 h-full w-full border-0"
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Copyright */}
-      <div className="border-t border-brand-pink-dark/40 bg-white px-4 py-5 sm:px-6">
+      <div className="border-t border-brand-pink-dark/30 bg-white px-4 py-5 dark:border-neon-line/10 dark:bg-neon-bg sm:px-6">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
-          <p className="text-xs text-brand-muted">
+          <p className="text-xs text-brand-muted dark:text-neon-muted">
             © {new Date().getFullYear()} GIG — Moda Feminina. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-xs text-brand-muted transition hover:text-brand-charcoal">
+            <Link to="/" className="text-xs text-brand-muted transition hover:text-brand-charcoal dark:text-neon-muted dark:hover:text-neon-text">
               Início
             </Link>
-            <Link to="/cadastro" className="text-xs text-brand-muted transition hover:text-brand-charcoal">
+            <Link to="/cadastro" className="text-xs text-brand-muted transition hover:text-brand-charcoal dark:text-neon-muted dark:hover:text-neon-text">
               Cadastro
             </Link>
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand-muted transition hover:text-[#25D366]"
+              className="text-neon-muted transition hover:text-[#25D366]"
               aria-label="WhatsApp"
             >
               <WhatsAppIcon className="h-5 w-5" />
@@ -183,7 +164,7 @@ export function Footer() {
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand-muted transition hover:text-brand-charcoal"
+              className="text-neon-muted transition hover:text-neon-pink"
               aria-label="Instagram"
             >
               <InstagramIcon className="h-5 w-5" />

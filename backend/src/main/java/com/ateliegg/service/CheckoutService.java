@@ -113,7 +113,15 @@ public class CheckoutService {
 
         BigDecimal subtotal = BigDecimal.ZERO;
 
-        for (var itemReq : request.getItems()) {
+        // Ordem estável evita deadlock se dois carrinhos travam itens em sequência diferente
+        List<CheckoutItemRequest> sortedItems = request.getItems().stream()
+                .sorted(Comparator
+                        .comparing(CheckoutItemRequest::getProductId)
+                        .thenComparing(CheckoutItemRequest::getColorName, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(CheckoutItemRequest::getSizeName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+
+        for (var itemReq : sortedItems) {
             Product product = productRepository.findById(itemReq.getProductId())
                     .orElseThrow(() -> new BusinessException("Produto não encontrado: " + itemReq.getProductId()));
 
@@ -127,21 +135,20 @@ public class CheckoutService {
                     .findFirst()
                     .orElseThrow(() -> new BusinessException("Tamanho inválido: " + itemReq.getSizeName()));
 
-            Stock stock = stockRepository.findByProductIdAndColorIdAndSizeIdForUpdate(
-                            product.getId(), color.getId(), size.getId())
-                    .orElseThrow(() -> new BusinessException("Estoque não encontrado para a combinação selecionada"));
-
-            if (stock.getQuantity() < itemReq.getQuantity()) {
-                throw new BusinessException("Estoque insuficiente para " + product.getTitle()
-                        + " (" + color.getName() + " / " + size.getName() + ")");
+            // UPDATE atômico: se outro usuário pegou a última unidade neste instante, retorna 0
+            int reserved = stockRepository.tryReserve(
+                    product.getId(), color.getId(), size.getId(), itemReq.getQuantity());
+            if (reserved == 0) {
+                throw new BusinessException(
+                        "Estoque insuficiente para " + product.getTitle()
+                                + " (" + color.getName() + " / " + size.getName() + "). "
+                                + "Outra pessoa pode ter comprado agora — atualize e tente de novo.",
+                        HttpStatus.CONFLICT);
             }
 
             BigDecimal unitPrice = wholesaleApplied ? product.getWholesalePrice() : product.getPrice();
             BigDecimal itemTotal = unitPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity()));
             subtotal = subtotal.add(itemTotal);
-
-            stock.setQuantity(stock.getQuantity() - itemReq.getQuantity());
-            stockRepository.save(stock);
 
             OrderItem orderItem = OrderItem.builder()
                     .order(order)

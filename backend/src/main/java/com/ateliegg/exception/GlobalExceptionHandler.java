@@ -20,7 +20,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Map<String, Object>> handleBusiness(BusinessException ex) {
-        return buildResponse(ex.getStatus(), ex.getMessage(), null);
+        return buildResponse(ex.getStatus(), ex.getMessage(), ex.getDetails());
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -50,8 +50,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         log.error("Erro não tratado: {}", ex.toString(), ex);
-        String message = ex.getMessage() != null ? ex.getMessage() : "Erro interno do servidor";
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, null);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno do servidor", null);
     }
 
     private ResponseEntity<Map<String, Object>> buildResponse(

@@ -11,6 +11,7 @@ import com.ateliegg.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,10 +29,27 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final FileStorageService fileStorageService;
+    private final LoginAttemptService loginAttemptService;
 
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        loginAttemptService.assertNotLocked(request.getEmail());
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        } catch (BadCredentialsException ex) {
+            loginAttemptService.registerFailure(request.getEmail());
+            int waitSeconds = loginAttemptService.currentLockSeconds(request.getEmail());
+            if (waitSeconds > 0) {
+                throw new BusinessException(
+                        "Email ou senha inválidos.",
+                        HttpStatus.TOO_MANY_REQUESTS,
+                        Map.of("retryAfterSeconds", waitSeconds));
+            }
+            throw ex;
+        }
+
+        loginAttemptService.registerSuccess(request.getEmail());
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException("Usuário não encontrado", HttpStatus.NOT_FOUND));

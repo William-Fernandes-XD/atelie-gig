@@ -46,9 +46,7 @@ export default function RegisterPage() {
       if (data.cpf) formData.append('cpf', data.cpf)
       if (photoFile) formData.append('photo', photoFile)
 
-      const response = await api.post('/api/auth/register', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      const response = await api.post('/api/auth/register', formData)
 
       finishAuth(response.data)
     } catch (err) {
@@ -93,7 +91,8 @@ export default function RegisterPage() {
           />
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" aria-busy={isSubmitting}>
+          <fieldset disabled={isSubmitting} className="min-w-0 space-y-5 border-0 p-0">
           <div className="flex flex-col items-center gap-3">
             <button
               type="button"
@@ -111,7 +110,7 @@ export default function RegisterPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
               className="hidden"
               onChange={handlePhotoChange}
             />
@@ -150,10 +149,15 @@ export default function RegisterPage() {
               <input {...register('cpf')} placeholder="Opcional" className="input-field" />
             </div>
           </div>
+          </fieldset>
 
           <div className="flex justify-end">
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
-              Cadastrar
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="btn-primary disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSubmitting ? 'Cadastrando...' : 'Cadastrar'}
             </button>
           </div>
         </form>

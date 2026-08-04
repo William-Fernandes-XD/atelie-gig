@@ -10,7 +10,27 @@ export const useUiStore = create((set) => ({
   closePaymentModal: () => set({ paymentOrderId: null }),
 
   toast: null,
-  showToast: ({ message, type = 'info', durationMs = 5500 }) =>
-    set({ toast: { message, type, durationMs } }),
+  /**
+   * @param {{ message: string, type?: 'info'|'success'|'error'|'warn', title?: string, actionLabel?: string, actionTo?: string, durationMs?: number }} payload
+   */
+  showToast: ({
+    message,
+    type = 'info',
+    title,
+    actionLabel,
+    actionTo,
+    durationMs = 4500,
+  }) =>
+    set({
+      toast: {
+        id: Date.now(),
+        message,
+        type,
+        title,
+        actionLabel,
+        actionTo,
+        durationMs,
+      },
+    }),
   clearToast: () => set({ toast: null }),
 }))

@@ -37,6 +37,7 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
     private final OrderStatusHistoryService orderStatusHistoryService;
+    private final MercadoPagoWebhookValidator webhookValidator;
 
     public PaymentConfigResponse getConfig() {
         return PaymentConfigResponse.builder()
@@ -192,7 +193,14 @@ public class PaymentService {
     }
 
     @Transactional
-    public void handleWebhook(Map<String, Object> payload) {
+    public void handleWebhook(
+            Map<String, Object> payload,
+            String xSignature,
+            String xRequestId,
+            String dataIdQuery) {
+        String dataId = resolveDataId(dataIdQuery, payload);
+        webhookValidator.validateOrThrow(xSignature, xRequestId, dataId);
+
         Object data = payload.get("data");
         if (!(data instanceof Map<?, ?> dataMap)) {
             return;
@@ -219,6 +227,17 @@ public class PaymentService {
         Order order = transaction.getOrder();
         applyPaymentToOrder(order, transaction);
         orderRepository.save(order);
+    }
+
+    private String resolveDataId(String dataIdQuery, Map<String, Object> payload) {
+        if (StringUtils.hasText(dataIdQuery)) {
+            return dataIdQuery;
+        }
+        Object data = payload.get("data");
+        if (data instanceof Map<?, ?> dataMap && dataMap.get("id") != null) {
+            return dataMap.get("id").toString();
+        }
+        return null;
     }
 
     private PaymentTransaction findOrCreateByExternalReference(Payment payment) {

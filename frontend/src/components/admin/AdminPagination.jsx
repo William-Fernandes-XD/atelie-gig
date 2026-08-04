@@ -48,7 +48,7 @@ export function AdminPagination({
           Anterior
         </button>
 
-        <span className="min-w-[5.5rem] text-center text-sm font-medium text-brand-charcoal">
+        <span className="min-w-[5.5rem] text-center text-sm font-medium text-neon-text">
           {current + 1} / {safeTotalPages}
         </span>
 

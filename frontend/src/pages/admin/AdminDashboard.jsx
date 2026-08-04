@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import api from '../../api/client'
 import { PAGE_SIZE } from '../../constants/pagination'
+import { useThemeStore } from '../../store/themeStore'
 
 function formatCurrency(value) {
   return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -44,13 +45,32 @@ function getDefaultRange() {
   }
 }
 
+function useChartTheme() {
+  const theme = useThemeStore((s) => s.theme)
+  const dark = theme === 'dark'
+  return {
+    dark,
+    grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(242,196,208,0.55)',
+    tick: dark ? '#a0a0a8' : '#6b6b6b',
+    label: dark ? '#8a8a94' : '#9ca3af',
+    tooltipBg: dark ? '#1c1c20' : '#ffffff',
+    tooltipBorder: dark ? 'rgba(255,255,255,0.12)' : 'rgba(242,196,208,0.6)',
+    barPrimary: dark ? '#f2c4d0' : '#9B8FD9',
+    barSecondary: dark ? '#c8c8d0' : '#f2c4d0',
+    barTertiary: dark ? '#e8a8b8' : '#a78bfa',
+    barAccent: dark ? '#ffffff' : '#fb7185',
+  }
+}
+
 function ChartCard({ title, children, empty, tall = false }) {
   return (
-    <section className="rounded-2xl border border-brand-pink/40 bg-white p-6 shadow-sm ring-1 ring-brand-pink/20">
-      <h2 className="font-serif text-xl font-semibold">{title}</h2>
+    <section className="admin-card">
+      <h2 className="font-display text-xl font-semibold text-neon-text">{title}</h2>
       <div className={`mt-4 ${tall ? 'h-96' : 'h-80'}`}>
         {empty ? (
-          <p className="flex h-full items-center justify-center text-sm text-brand-muted">Sem dados no período</p>
+          <p className="flex h-full items-center justify-center text-sm text-neon-muted">
+            Sem dados no período
+          </p>
         ) : (
           children
         )}
@@ -59,20 +79,27 @@ function ChartCard({ title, children, empty, tall = false }) {
   )
 }
 
-function AxisTick({ x, y, payload }) {
+function AxisTick({ x, y, payload, fill }) {
   return (
     <g transform={`translate(${x},${y})`}>
-      <text
-        x={0}
-        y={0}
-        dy={12}
-        textAnchor="middle"
-        fill="#6b7280"
-        fontSize={10}
-      >
+      <text x={0} y={0} dy={12} textAnchor="middle" fill={fill} fontSize={10}>
         {truncateLabel(payload.value, 14)}
       </text>
     </g>
+  )
+}
+
+function StatCard({ title, value, accent }) {
+  return (
+    <div className="admin-card relative overflow-hidden !p-5">
+      <div
+        className={`pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-40 blur-2xl ${accent}`}
+      />
+      <p className="relative text-sm text-neon-muted">{title}</p>
+      <p className="relative mt-2 font-display text-2xl font-bold tracking-tight text-neon-text">
+        {value}
+      </p>
+    </div>
   )
 }
 
@@ -81,6 +108,7 @@ export default function AdminDashboard() {
   const [startDate, setStartDate] = useState(defaults.startDate)
   const [endDate, setEndDate] = useState(defaults.endDate)
   const [appliedRange, setAppliedRange] = useState(defaults)
+  const chart = useChartTheme()
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['dashboard', appliedRange.startDate, appliedRange.endDate],
@@ -101,13 +129,14 @@ export default function AdminDashboard() {
   }
 
   if (isLoading && !data) {
-    return <p>Carregando dashboard...</p>
+    return <p className="text-neon-muted">Carregando dashboard...</p>
   }
 
   if (isError) {
     return (
-      <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
-        Erro ao carregar dashboard: {error?.response?.data?.message || error?.message || 'tente novamente.'}
+      <div className="admin-alert-err">
+        Erro ao carregar dashboard:{' '}
+        {error?.response?.data?.message || error?.message || 'tente novamente.'}
       </div>
     )
   }
@@ -117,14 +146,27 @@ export default function AdminDashboard() {
     totalSpent: Number(b.totalSpent),
   }))
 
+  const tooltipStyle = {
+    backgroundColor: chart.tooltipBg,
+    border: `1px solid ${chart.tooltipBorder}`,
+    borderRadius: 12,
+    color: chart.dark ? '#ececf0' : '#2b2b2b',
+  }
+
   return (
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <h1 className="font-serif text-3xl font-bold">Dashboard</h1>
+        <div>
+          <h1 className="admin-page-title">Dashboard</h1>
+          <p className="admin-page-sub">Visão geral de vendas, estoque e clientes</p>
+        </div>
 
-        <form onSubmit={applyFilters} className="flex flex-wrap items-end gap-3">
+        <form
+          onSubmit={applyFilters}
+          className="flex flex-wrap items-end gap-3 rounded-2xl border border-brand-pink/30 bg-neon-surface/80 p-3 dark:border-neon-line/10"
+        >
           <label className="text-sm">
-            <span className="mb-1 block text-brand-muted">Data início</span>
+            <span className="mb-1 block text-neon-muted">Data início</span>
             <input
               type="date"
               value={startDate}
@@ -134,7 +176,7 @@ export default function AdminDashboard() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-brand-muted">Data fim</span>
+            <span className="mb-1 block text-neon-muted">Data fim</span>
             <input
               type="date"
               value={endDate}
@@ -149,36 +191,49 @@ export default function AdminDashboard() {
         </form>
       </div>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Faturamento (período)" value={formatCurrency(data?.revenue)} />
-        <StatCard title="Pedidos (período)" value={data?.orderCount || 0} />
-        <StatCard title="Sem estoque" value={data?.outOfStockProducts?.length || 0} />
-        <StatCard title="Top produtos" value={data?.topSellingProducts?.length || 0} />
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Faturamento (período)"
+          value={formatCurrency(data?.revenue)}
+          accent="bg-brand-purple"
+        />
+        <StatCard
+          title="Pedidos (período)"
+          value={data?.orderCount || 0}
+          accent="bg-brand-pink"
+        />
+        <StatCard
+          title="Sem estoque"
+          value={data?.outOfStockProducts?.length || 0}
+          accent="bg-red-400"
+        />
+        <StatCard
+          title="Top produtos"
+          value={data?.topSellingProducts?.length || 0}
+          accent="bg-brand-purple"
+        />
       </div>
 
-      <div className="mt-10">
+      <div className="mt-8">
         <ChartCard title="Faturamento — últimos 12 meses" empty={!data?.monthlyRevenue?.length} tall>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data?.monthlyRevenue || []} margin={{ top: 24, right: 8, left: 8, bottom: 28 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
               <XAxis
                 dataKey="month"
                 interval={0}
-                tick={<AxisTick />}
+                tick={<AxisTick fill={chart.tick} />}
                 height={40}
-                label={{ value: 'Mês', position: 'insideBottom', offset: -18, fill: '#9ca3af', fontSize: 11 }}
+                label={{ value: 'Mês', position: 'insideBottom', offset: -18, fill: chart.label, fontSize: 11 }}
               />
-              <YAxis tickFormatter={(v) => `R$ ${v}`} tick={{ fontSize: 11 }} />
-              <Tooltip
-                formatter={currencyTooltip}
-                labelFormatter={(label) => `Mês: ${label}`}
-              />
-              <Bar dataKey="revenue" name="Faturamento" fill="#c084fc" radius={[4, 4, 0, 0]}>
+              <YAxis tickFormatter={(v) => `R$ ${v}`} tick={{ fontSize: 11, fill: chart.tick }} />
+              <Tooltip formatter={currencyTooltip} labelFormatter={(label) => `Mês: ${label}`} contentStyle={tooltipStyle} />
+              <Bar dataKey="revenue" name="Faturamento" fill={chart.barPrimary} radius={[6, 6, 0, 0]}>
                 <LabelList
                   dataKey="revenue"
                   position="top"
                   formatter={(v) => (Number(v) > 0 ? formatCurrency(v) : '')}
-                  style={{ fontSize: 10, fill: '#6b7280' }}
+                  style={{ fontSize: 10, fill: chart.tick }}
                 />
               </Bar>
             </BarChart>
@@ -186,25 +241,22 @@ export default function AdminDashboard() {
         </ChartCard>
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <ChartCard title="Top 10 produtos mais vendidos" empty={!data?.topSellingProducts?.length} tall>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data?.topSellingProducts || []} margin={{ top: 24, right: 8, left: 8, bottom: 48 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
               <XAxis
                 dataKey="productTitle"
                 interval={0}
-                tick={<AxisTick />}
+                tick={<AxisTick fill={chart.tick} />}
                 height={56}
-                label={{ value: 'Produto', position: 'insideBottom', offset: -18, fill: '#9ca3af', fontSize: 11 }}
+                label={{ value: 'Produto', position: 'insideBottom', offset: -18, fill: chart.label, fontSize: 11 }}
               />
-              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-              <Tooltip
-                formatter={quantityTooltip}
-                labelFormatter={(label) => `Produto: ${label}`}
-              />
-              <Bar dataKey="totalQuantity" name="Quantidade vendida" fill="#f9a8d4" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="totalQuantity" position="top" style={{ fontSize: 10, fill: '#6b7280' }} />
+              <YAxis tick={{ fontSize: 11, fill: chart.tick }} allowDecimals={false} />
+              <Tooltip formatter={quantityTooltip} labelFormatter={(label) => `Produto: ${label}`} contentStyle={tooltipStyle} />
+              <Bar dataKey="totalQuantity" name="Quantidade vendida" fill={chart.barSecondary} radius={[6, 6, 0, 0]}>
+                <LabelList dataKey="totalQuantity" position="top" style={{ fontSize: 10, fill: chart.tick }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -213,21 +265,18 @@ export default function AdminDashboard() {
         <ChartCard title="Top 10 categorias mais vendidas" empty={!data?.topCategories?.length} tall>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data?.topCategories || []} margin={{ top: 24, right: 8, left: 8, bottom: 48 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
               <XAxis
                 dataKey="categoryName"
                 interval={0}
-                tick={<AxisTick />}
+                tick={<AxisTick fill={chart.tick} />}
                 height={56}
-                label={{ value: 'Categoria', position: 'insideBottom', offset: -18, fill: '#9ca3af', fontSize: 11 }}
+                label={{ value: 'Categoria', position: 'insideBottom', offset: -18, fill: chart.label, fontSize: 11 }}
               />
-              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-              <Tooltip
-                formatter={quantityTooltip}
-                labelFormatter={(label) => `Categoria: ${label}`}
-              />
-              <Bar dataKey="totalQuantity" name="Quantidade vendida" fill="#a78bfa" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="totalQuantity" position="top" style={{ fontSize: 10, fill: '#6b7280' }} />
+              <YAxis tick={{ fontSize: 11, fill: chart.tick }} allowDecimals={false} />
+              <Tooltip formatter={quantityTooltip} labelFormatter={(label) => `Categoria: ${label}`} contentStyle={tooltipStyle} />
+              <Bar dataKey="totalQuantity" name="Quantidade vendida" fill={chart.barTertiary} radius={[6, 6, 0, 0]}>
+                <LabelList dataKey="totalQuantity" position="top" style={{ fontSize: 10, fill: chart.tick }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -238,25 +287,22 @@ export default function AdminDashboard() {
         <ChartCard title="Top 10 clientes que mais compraram" empty={!topBuyers.length} tall>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={topBuyers} margin={{ top: 24, right: 8, left: 8, bottom: 48 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
               <XAxis
                 dataKey="customerName"
                 interval={0}
-                tick={<AxisTick />}
+                tick={<AxisTick fill={chart.tick} />}
                 height={56}
-                label={{ value: 'Cliente', position: 'insideBottom', offset: -18, fill: '#9ca3af', fontSize: 11 }}
+                label={{ value: 'Cliente', position: 'insideBottom', offset: -18, fill: chart.label, fontSize: 11 }}
               />
-              <YAxis tickFormatter={(v) => `R$ ${v}`} tick={{ fontSize: 11 }} />
-              <Tooltip
-                formatter={spentTooltip}
-                labelFormatter={(label) => `Cliente: ${label}`}
-              />
-              <Bar dataKey="totalSpent" name="Total gasto" fill="#fb7185" radius={[4, 4, 0, 0]}>
+              <YAxis tickFormatter={(v) => `R$ ${v}`} tick={{ fontSize: 11, fill: chart.tick }} />
+              <Tooltip formatter={spentTooltip} labelFormatter={(label) => `Cliente: ${label}`} contentStyle={tooltipStyle} />
+              <Bar dataKey="totalSpent" name="Total gasto" fill={chart.barAccent} radius={[6, 6, 0, 0]}>
                 <LabelList
                   dataKey="totalSpent"
                   position="top"
                   formatter={(v) => formatCurrency(v)}
-                  style={{ fontSize: 10, fill: '#6b7280' }}
+                  style={{ fontSize: 10, fill: chart.tick }}
                 />
               </Bar>
             </BarChart>
@@ -264,27 +310,27 @@ export default function AdminDashboard() {
         </ChartCard>
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
-        <section className="rounded-2xl border border-brand-pink/40 bg-white p-6 shadow-sm ring-1 ring-brand-pink/20">
-          <h2 className="font-serif text-xl font-semibold">Produtos sem estoque</h2>
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <section className="admin-card">
+          <h2 className="font-display text-xl font-semibold text-neon-text">Produtos sem estoque</h2>
           <ul className="mt-4 max-h-64 space-y-2 overflow-y-auto">
             {(data?.outOfStockProducts || []).slice(0, PAGE_SIZE).map((p, i) => (
               <li
                 key={i}
-                className="rounded-lg border border-brand-pink/20 bg-brand-pink/10 px-3 py-2 text-sm"
+                className="rounded-xl border border-brand-pink/25 bg-brand-pink/10 px-3 py-2.5 text-sm dark:border-neon-line/10 dark:bg-white/[0.04]"
               >
                 {p.productTitle} — {p.colorName} / {p.sizeName}
               </li>
             ))}
             {!data?.outOfStockProducts?.length && (
-              <li className="text-brand-muted">Nenhum produto sem estoque</li>
+              <li className="text-neon-muted">Nenhum produto sem estoque</li>
             )}
           </ul>
         </section>
 
-        <section className="rounded-2xl border border-brand-pink/40 bg-white p-6 shadow-sm ring-1 ring-brand-pink/20">
-          <h2 className="font-serif text-xl font-semibold">Vendas recentes (período)</h2>
-          <div className="admin-table-wrap mt-4 max-h-72">
+        <section className="admin-card">
+          <h2 className="font-display text-xl font-semibold text-neon-text">Vendas recentes (período)</h2>
+          <div className="admin-table-wrap mt-4 max-h-72 !shadow-none">
             <table className="admin-table">
               <thead>
                 <tr>
@@ -298,12 +344,14 @@ export default function AdminDashboard() {
                   <tr key={i}>
                     <td className="font-medium">{sale.orderNumber}</td>
                     <td>{sale.customerName}</td>
-                    <td className="font-semibold text-brand-purple">{formatCurrency(sale.total)}</td>
+                    <td className="font-semibold text-brand-purple dark:text-brand-pink">
+                      {formatCurrency(sale.total)}
+                    </td>
                   </tr>
                 ))}
                 {!data?.recentSales?.length && (
                   <tr>
-                    <td colSpan={3} className="py-6 text-center text-brand-muted">
+                    <td colSpan={3} className="py-6 text-center text-neon-muted">
                       Nenhuma venda no período
                     </td>
                   </tr>
@@ -313,15 +361,6 @@ export default function AdminDashboard() {
           </div>
         </section>
       </div>
-    </div>
-  )
-}
-
-function StatCard({ title, value }) {
-  return (
-    <div className="rounded-2xl border border-brand-pink/40 bg-gradient-to-br from-brand-pink/25 via-white to-white p-6 shadow-sm ring-1 ring-brand-pink/20">
-      <p className="text-sm text-brand-muted">{title}</p>
-      <p className="mt-2 text-2xl font-bold text-brand-charcoal">{value}</p>
     </div>
   )
 }

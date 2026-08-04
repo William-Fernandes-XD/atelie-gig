@@ -1,5 +1,8 @@
 services:
+  # Banco local opcional (só se NÃO usar Supabase).
+  # Subir com: docker compose --profile local-db up -d --build
   postgres:
+    profiles: ["local-db"]
     image: postgres:16-alpine
     container_name: atelie-gg-db
     restart: unless-stopped
@@ -25,18 +28,29 @@ services:
       dockerfile: Dockerfile
     container_name: atelie-gg-backend
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     env_file:
       - .env
     environment:
       TZ: America/Sao_Paulo
-      DB_HOST: postgres
-      DB_PORT: 5432
       JAVA_TOOL_OPTIONS: -Duser.timezone=America/Sao_Paulo
+      APP_ENV: ${APP_ENV:-development}
+      # Com perfil local-db, o host interno do Compose é "postgres".
+      # Com Supabase, deixe DB_HOST no .env (ex.: db.xxxxx.supabase.co) — não sobrescreva aqui.
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSL_MODE: ${DB_SSL_MODE:-disable}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+    # Só localhost: a API Java NÃO fica aberta na internet (acesso via nginx do frontend).
     ports:
-      - "${SERVER_PORT:-8080}:8080"
+      - "127.0.0.1:${SERVER_PORT:-8080}:8080"
     volumes:
       - uploads_data:/app/uploads
 

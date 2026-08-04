@@ -43,8 +43,6 @@ public class AtelieProperties {
     public static class Mercadopago {
         private String publicKey;
         private String accessToken;
-        private String clientId;
-        private String clientSecret;
         private String webhookSecret;
         private String successUrl;
         private String failureUrl;

@@ -11,6 +11,7 @@ import com.ateliegg.repository.ProductColorRepository;
 import com.ateliegg.repository.ProductRepository;
 import com.ateliegg.repository.ProductSizeRepository;
 import com.ateliegg.repository.StockRepository;
+import com.ateliegg.security.SecurityUtils;
 import com.ateliegg.util.SizeOptionsParser;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -39,6 +40,7 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final StockRepository stockRepository;
     private final FileStorageService fileStorageService;
+    private final SecurityUtils securityUtils;
 
     @Transactional(readOnly = true)
     public Page<ProductSummaryResponse> findActive(
@@ -148,7 +150,11 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public ProductResponse findById(Long id) {
-        return toDetail(getProduct(id));
+        Product product = getProduct(id);
+        if (!Boolean.TRUE.equals(product.getActive()) && !isStaff()) {
+            throw new BusinessException("Produto não encontrado", HttpStatus.NOT_FOUND);
+        }
+        return toDetail(product);
     }
 
     @Transactional(readOnly = true)
@@ -324,6 +330,16 @@ public class ProductService {
     private Product getProduct(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Produto não encontrado", HttpStatus.NOT_FOUND));
+    }
+
+    private boolean isStaff() {
+        if (!securityUtils.isAuthenticated()) {
+            return false;
+        }
+        return switch (securityUtils.getCurrentUser().getRole()) {
+            case ADMIN, GERENTE, ESTOQUISTA -> true;
+            default -> false;
+        };
     }
 
     private ProductSummaryResponse toSummary(Product product) {

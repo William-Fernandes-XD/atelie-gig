@@ -2,19 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Claro = paleta original GIG (rosa pastel) + neon bem sutil
+  Escuro = dark padrão + brilho branco bem fraco
+*/
+:root {
+  --neon-bg: 255 255 255;
+  --neon-surface: 255 255 255;
+  --neon-card: 255 245 248;
+  --neon-text: 43 43 43;
+  --neon-muted: 107 107 107;
+  --neon-line: 43 43 43;
+  --accent-pink: 232 168 184;
+  --accent-cyan: 155 143 217;
+  --accent-violet: 155 143 217;
+  --shadow-neon: 0 8px 24px rgba(242, 196, 208, 0.45);
+  --shadow-neon-cyan: 0 8px 24px rgba(155, 143, 217, 0.2);
+  --body-glow-1: rgba(242, 196, 208, 0.35);
+  --body-glow-2: rgba(155, 143, 217, 0.12);
+  --scrollbar-track: #fff5f8;
+  --scrollbar-thumb-a: #f7d4dd;
+  --scrollbar-thumb-b: #f2c4d0;
+}
+
+html.dark {
+  --neon-bg: 18 18 20;
+  --neon-surface: 28 28 32;
+  --neon-card: 36 36 42;
+  --neon-text: 236 236 240;
+  --neon-muted: 160 160 168;
+  --neon-line: 255 255 255;
+  --accent-pink: 242 196 208;
+  --accent-cyan: 220 220 230;
+  --accent-violet: 200 200 210;
+  --shadow-neon: 0 0 18px rgba(255, 255, 255, 0.06);
+  --shadow-neon-cyan: 0 0 14px rgba(255, 255, 255, 0.05);
+  --body-glow-1: rgba(255, 255, 255, 0.04);
+  --body-glow-2: rgba(242, 196, 208, 0.06);
+  --scrollbar-track: #1c1c20;
+  --scrollbar-thumb-a: #3a3a42;
+  --scrollbar-thumb-b: #4a4a54;
+}
+
 @layer base {
+  ::selection {
+    background-color: #E8A8B8;
+    color: #2B2B2B;
+  }
+
+  ::-moz-selection {
+    background-color: #E8A8B8;
+    color: #2B2B2B;
+  }
+
   body {
-    @apply font-sans text-brand-charcoal bg-white antialiased;
+    @apply font-sans text-neon-text bg-neon-bg antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 45% at 50% -15%, var(--body-glow-1), transparent 70%),
+      radial-gradient(ellipse 50% 35% at 100% 0%, var(--body-glow-2), transparent 65%);
+    background-attachment: fixed;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   h1, h2, h3, h4 {
-    @apply font-sans tracking-tight;
+    @apply font-display tracking-tight;
   }
 
-  /* Scrollbar — rosa claro / feminino */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #f2c4d0 #fff5f8;
+    scrollbar-color: var(--scrollbar-thumb-b) var(--scrollbar-track);
   }
 
   *::-webkit-scrollbar {
@@ -23,65 +79,144 @@
   }
 
   *::-webkit-scrollbar-track {
-    background: #fff5f8;
+    background: var(--scrollbar-track);
     border-radius: 999px;
   }
 
   *::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #f7d4dd 0%, #f2c4d0 100%);
+    background: linear-gradient(180deg, var(--scrollbar-thumb-a) 0%, var(--scrollbar-thumb-b) 100%);
     border-radius: 999px;
-    border: 2px solid #fff5f8;
-  }
-
-  *::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #f2c4d0 0%, #e8a8b8 100%);
+    border: 2px solid var(--scrollbar-track);
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-full bg-brand-purple px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand-purple-dark focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2;
+    @apply inline-flex items-center justify-center rounded-full bg-brand-purple px-8 py-3 text-sm font-semibold text-white shadow-neon transition hover:bg-brand-purple-dark focus:outline-none focus:ring-2 focus:ring-brand-purple/40 focus:ring-offset-2 focus:ring-offset-neon-bg;
+  }
+
+  html.dark .btn-primary {
+    @apply bg-brand-pink text-brand-charcoal hover:bg-brand-pink-dark;
   }
 
   .btn-outline {
-    @apply inline-flex items-center justify-center rounded-full border border-brand-charcoal px-8 py-3 text-sm font-semibold text-brand-charcoal transition hover:bg-brand-charcoal hover:text-white;
+    @apply inline-flex items-center justify-center rounded-full border border-brand-charcoal/80 px-8 py-3 text-sm font-semibold text-neon-text transition hover:bg-brand-charcoal hover:text-white;
+  }
+
+  html.dark .btn-outline {
+    @apply border-neon-line/25 text-neon-text hover:border-neon-line/50 hover:bg-neon-line/10 hover:text-neon-text;
   }
 
   .input-field {
-    @apply w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-brand-charcoal placeholder:text-gray-400 focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20;
+    @apply w-full rounded-xl border border-neon-line/15 bg-neon-surface px-4 py-3 text-sm text-neon-text placeholder:text-neon-muted focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20;
   }
 
   .admin-input {
-    @apply w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-brand-charcoal placeholder:text-gray-400 focus:border-brand-pink-dark focus:outline-none focus:ring-2 focus:ring-brand-pink/30;
+    @apply w-full rounded-xl border border-neon-line/15 bg-neon-bg/60 px-4 py-2.5 text-sm text-neon-text placeholder:text-neon-muted focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/25;
+  }
+
+  html.dark .admin-input {
+    @apply bg-neon-card/40 focus:border-brand-pink/50 focus:ring-brand-pink/20;
   }
 
   .admin-fieldset {
-    @apply rounded-xl border border-gray-300 bg-white p-5;
+    @apply rounded-2xl border border-neon-line/10 bg-neon-card/40 p-5;
   }
 
   .label-field {
-    @apply mb-2 block text-sm font-semibold text-brand-charcoal;
+    @apply mb-2 block text-sm font-semibold text-neon-text;
   }
 
-  /* Tabelas admin — tema rosa pastel */
+  .admin-card {
+    @apply rounded-2xl border border-brand-pink/35 bg-neon-surface/95 p-6 shadow-neon backdrop-blur-md ring-1 ring-brand-pink/15;
+  }
+
+  html.dark .admin-card {
+    @apply border-neon-line/10 ring-neon-line/5 shadow-[0_0_28px_rgba(255,255,255,0.04)];
+  }
+
+  .admin-page-title {
+    @apply font-display text-3xl font-bold tracking-tight text-neon-text;
+  }
+
+  .admin-page-sub {
+    @apply mt-1.5 text-sm text-neon-muted;
+  }
+
+  .admin-alert-ok {
+    @apply rounded-xl border border-emerald-300/50 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-300;
+  }
+
+  .admin-alert-err {
+    @apply rounded-xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-300;
+  }
+
+  .admin-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-brand-pink/35 px-2.5 py-1 text-xs font-medium text-neon-text dark:bg-white/10 dark:text-neon-text;
+  }
+
+  .admin-badge-muted {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-neon-line/10 px-2.5 py-1 text-xs font-medium text-neon-muted;
+  }
+
+  .admin-btn-soft {
+    @apply rounded-full bg-brand-pink/30 px-3 py-1.5 text-xs font-semibold text-neon-text transition hover:bg-brand-pink/50 dark:bg-white/10 dark:hover:bg-white/15;
+  }
+
+  .admin-btn-danger {
+    @apply rounded-full px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/15;
+  }
+
+  .admin-modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md;
+  }
+
+  .admin-modal {
+    @apply max-h-[90vh] w-full overflow-y-auto rounded-3xl border border-brand-pink/35 bg-neon-surface p-6 shadow-neon ring-1 ring-brand-pink/20 dark:border-neon-line/10 dark:ring-neon-line/5;
+  }
+
   .admin-table-wrap {
-    @apply overflow-x-auto rounded-2xl border border-brand-pink/40 bg-white shadow-sm ring-1 ring-brand-pink/20;
+    @apply overflow-x-auto rounded-2xl border border-brand-pink/40 bg-neon-surface/95 shadow-neon ring-1 ring-brand-pink/20 backdrop-blur-md;
+  }
+
+  html.dark .admin-table-wrap {
+    @apply border-neon-line/10 ring-neon-line/5 shadow-[0_0_24px_rgba(255,255,255,0.04)];
   }
 
   .admin-table {
-    @apply w-full text-left text-sm text-brand-charcoal;
+    @apply w-full text-left text-sm text-neon-text;
+  }
+
+  .admin-table thead {
+    @apply sticky top-0 z-10;
   }
 
   .admin-table thead tr {
-    @apply border-b border-brand-pink/40 bg-gradient-to-r from-brand-pink/50 via-brand-pink/30 to-brand-pink/15;
+    @apply border-b border-brand-pink/40 bg-gradient-to-r from-brand-pink/55 via-brand-pink/30 to-brand-purple/10;
+  }
+
+  html.dark .admin-table thead tr {
+    @apply border-neon-line/10 from-white/[0.12] via-white/[0.06] to-transparent;
   }
 
   .admin-table th {
-    @apply px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-brand-charcoal/80;
+    @apply whitespace-nowrap px-4 py-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-neon-muted;
   }
 
   .admin-table tbody tr {
-    @apply border-b border-brand-pink/15 transition hover:bg-brand-pink/10;
+    @apply border-b border-neon-line/[0.08] transition hover:bg-brand-pink/10;
+  }
+
+  html.dark .admin-table tbody tr {
+    @apply hover:bg-white/[0.04];
+  }
+
+  .admin-table tbody tr:nth-child(even) {
+    @apply bg-brand-pink/[0.04];
+  }
+
+  html.dark .admin-table tbody tr:nth-child(even) {
+    @apply bg-white/[0.02];
   }
 
   .admin-table tbody tr:last-child {
@@ -89,25 +224,45 @@
   }
 
   .admin-table td {
-    @apply px-4 py-3 align-middle;
+    @apply px-4 py-3.5 align-middle;
   }
 
   .admin-table-empty {
-    @apply rounded-2xl border border-dashed border-brand-pink/40 bg-brand-pink/5 px-6 py-12 text-center text-sm text-brand-muted;
+    @apply rounded-2xl border border-dashed border-brand-pink/40 bg-brand-pink/5 px-6 py-14 text-center text-sm text-neon-muted dark:border-neon-line/20 dark:bg-white/[0.03];
   }
 
   .admin-pagination {
-    @apply mt-4 flex flex-col items-center justify-between gap-3 rounded-2xl border border-brand-pink/30 bg-gradient-to-r from-brand-pink/20 via-white to-brand-pink/10 px-4 py-3 sm:flex-row;
+    @apply mt-4 flex flex-col items-center justify-between gap-3 rounded-2xl border border-brand-pink/30 bg-gradient-to-r from-brand-pink/20 via-neon-surface to-brand-purple/10 px-4 py-3 sm:flex-row;
+  }
+
+  html.dark .admin-pagination {
+    @apply border-neon-line/10 from-white/5 via-neon-surface to-white/[0.03];
   }
 
   .admin-page-btn {
-    @apply rounded-full border border-brand-pink/50 bg-white px-4 py-1.5 text-xs font-semibold text-brand-charcoal transition hover:border-brand-pink-dark hover:bg-brand-pink/40 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply rounded-full border border-brand-pink/50 bg-neon-surface px-4 py-1.5 text-xs font-semibold text-neon-text transition hover:border-brand-pink-dark hover:bg-brand-pink/40 disabled:cursor-not-allowed disabled:opacity-40 dark:border-neon-line/20 dark:hover:border-neon-line/40 dark:hover:bg-white/10;
   }
 
-  /* Campos seguros do Mercado Pago (iframes) */
   .mp-field iframe {
     width: 100% !important;
     height: 100% !important;
+  }
+
+  /* Neon sutil — claro: rosa suave / escuro: branco bem fraco */
+  .neon-glow-text {
+    text-shadow: 0 0 18px rgba(242, 196, 208, 0.55);
+  }
+
+  html.dark .neon-glow-text {
+    text-shadow: 0 0 14px rgba(255, 255, 255, 0.18);
+  }
+
+  .neon-panel {
+    @apply border border-neon-line/10 bg-neon-surface/95 backdrop-blur-md;
+  }
+
+  .subtle-glow {
+    box-shadow: var(--shadow-neon);
   }
 }
 
@@ -134,7 +289,7 @@
 
 @keyframes order-progress-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(155, 143, 217, 0.4);
+    box-shadow: 0 0 0 0 rgba(155, 143, 217, 0.35);
     transform: scale(1);
   }
   50% {
@@ -152,24 +307,11 @@
   }
 }
 
-@keyframes hero-fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
+@keyframes neon-pulse {
+  0%, 100% {
+    opacity: 0.45;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes hero-fade-in {
-  from {
-    opacity: 0;
-    transform: scale(1.04);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
+  50% {
+    opacity: 0.9;
   }
 }

@@ -68,6 +68,10 @@ public class OrderExpirationService {
     public void restoreStock(Order order) {
         for (OrderItem item : order.getItems()) {
             Product product = item.getProduct();
+            if (product == null) {
+                log.warn("Item sem produto no pedido {} — estoque não restaurado", order.getOrderNumber());
+                continue;
+            }
 
             ProductColor color = product.getColors().stream()
                     .filter(c -> c.getName().equalsIgnoreCase(item.getColorName()))
@@ -85,11 +89,12 @@ public class OrderExpirationService {
                 continue;
             }
 
-            stockRepository.findByProductIdAndColorIdAndSizeId(product.getId(), color.getId(), size.getId())
-                    .ifPresent(stock -> {
-                        stock.setQuantity(stock.getQuantity() + item.getQuantity());
-                        stockRepository.save(stock);
-                    });
+            int updated = stockRepository.release(
+                    product.getId(), color.getId(), size.getId(), item.getQuantity());
+            if (updated == 0) {
+                log.warn("Linha de estoque não encontrada ao restaurar {} (pedido {})",
+                        item.getProductTitle(), order.getOrderNumber());
+            }
         }
     }
 }

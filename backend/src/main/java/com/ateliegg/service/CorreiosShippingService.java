@@ -42,6 +42,8 @@ public class CorreiosShippingService {
 
     public static final String PAC_CODE = "04510";
     public static final String SEDEX_CODE = "04014";
+    public static final String ARRANGE_CODE = "COMBINAR";
+    public static final String ARRANGE_NAME = "A combinar com o vendedor";
 
     private static final Map<String, String> SERVICE_NAMES = Map.of(
             PAC_CODE, "PAC",
@@ -107,7 +109,8 @@ public class CorreiosShippingService {
 
         List<ShippingQuoteResponse.ShippingOption> sorted = options.stream()
                 .sorted(Comparator.comparing(ShippingQuoteResponse.ShippingOption::getPrice))
-                .toList();
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        sorted.add(arrangeWithSellerOption());
 
         return ShippingQuoteResponse.builder()
                 .originCep(formatCep(originCep))
@@ -121,6 +124,10 @@ public class CorreiosShippingService {
             String destinationCep,
             int totalQuantity,
             String serviceCode) {
+        if (ARRANGE_CODE.equalsIgnoreCase(serviceCode)) {
+            return arrangeWithSellerOption();
+        }
+
         ShippingQuoteRequest request = new ShippingQuoteRequest();
         request.setDestinationCep(destinationCep);
         ShippingQuoteRequest.QuoteItem item = new ShippingQuoteRequest.QuoteItem();
@@ -135,6 +142,16 @@ public class CorreiosShippingService {
                 .orElseThrow(() -> new BusinessException(
                         "Opção de frete inválida ou indisponível. Simule o frete novamente.",
                         HttpStatus.BAD_REQUEST));
+    }
+
+    private static ShippingQuoteResponse.ShippingOption arrangeWithSellerOption() {
+        return ShippingQuoteResponse.ShippingOption.builder()
+                .serviceCode(ARRANGE_CODE)
+                .serviceName(ARRANGE_NAME)
+                .price(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP))
+                .deadlineDays(0)
+                .fromCorreios(false)
+                .build();
     }
 
     private List<ShippingQuoteResponse.ShippingOption> quoteFromCorreios(

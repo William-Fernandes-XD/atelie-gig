@@ -56,6 +56,7 @@ public class OrderController {
 
     @GetMapping("/number/{orderNumber}")
     @Operation(summary = "Buscar pedido por número")
+    @SecurityRequirement(name = "Bearer Authentication")
     public OrderResponse findByNumber(@PathVariable String orderNumber) {
         return orderService.findByOrderNumber(orderNumber);
     }
@@ -71,7 +72,11 @@ public class OrderController {
 
     @PostMapping("/webhook/mercadopago")
     @Operation(summary = "Webhook Mercado Pago")
-    public void mercadoPagoWebhook(@RequestBody Map<String, Object> payload) {
-        orderService.handleWebhook(payload);
+    public void mercadoPagoWebhook(
+            @RequestBody Map<String, Object> payload,
+            @RequestHeader(value = "x-signature", required = false) String xSignature,
+            @RequestHeader(value = "x-request-id", required = false) String xRequestId,
+            @RequestParam(value = "data.id", required = false) String dataId) {
+        orderService.handleWebhook(payload, xSignature, xRequestId, dataId);
     }
 }

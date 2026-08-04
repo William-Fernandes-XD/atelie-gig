@@ -92,24 +92,24 @@ export default function AdminCategories() {
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-8">
-        <h1 className="font-serif text-3xl font-bold text-brand-charcoal">Categorias</h1>
-        <p className="mt-2 text-sm text-brand-muted">
+        <h1 className="admin-page-title">Categorias</h1>
+        <p className="admin-page-sub">
           Cadastre categorias e os tamanhos disponíveis nelas (ex.: 40-48).
         </p>
       </div>
 
       {message && (
-        <div className="mb-4 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">{message}</div>
+        <div className="mb-4 admin-alert-ok">{message}</div>
       )}
       {error && (
-        <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
+        <div className="mb-4 admin-alert-err">{error}</div>
       )}
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="rounded-2xl border border-brand-pink/40 bg-white p-6 shadow-sm ring-1 ring-brand-pink/20"
+        className="admin-card"
       >
-        <h2 className="font-serif text-xl font-semibold text-brand-charcoal">
+        <h2 className="font-display text-xl font-semibold text-neon-text">
           {editing ? 'Editar categoria' : 'Nova categoria'}
         </h2>
 
@@ -157,10 +157,10 @@ export default function AdminCategories() {
       </form>
 
       <section className="mt-10">
-        <h2 className="font-serif text-xl font-semibold text-brand-charcoal">Categorias cadastradas</h2>
+        <h2 className="font-display text-xl font-semibold text-neon-text">Categorias cadastradas</h2>
 
         {isLoading ? (
-          <p className="mt-4 text-brand-muted">Carregando...</p>
+          <p className="mt-4 text-neon-muted">Carregando...</p>
         ) : visibleCategories.length === 0 ? (
           <p className="mt-4 admin-table-empty">Nenhuma categoria cadastrada ainda.</p>
         ) : (
@@ -178,10 +178,10 @@ export default function AdminCategories() {
                 <tbody>
                   {visibleCategories.map((cat) => (
                     <tr key={cat.id}>
-                      <td className="font-semibold text-brand-charcoal">{cat.name}</td>
-                      <td className="text-brand-muted">{cat.description || 'Sem descrição'}</td>
+                      <td className="font-semibold text-neon-text">{cat.name}</td>
+                      <td className="text-neon-muted">{cat.description || 'Sem descrição'}</td>
                       <td>
-                        <span className="inline-flex rounded-full bg-brand-pink/40 px-2.5 py-1 text-xs font-medium text-brand-purple">
+                        <span className="admin-badge">
                           {(cat.sizeOptions || ['40-48']).join(', ')}
                         </span>
                       </td>
@@ -190,7 +190,7 @@ export default function AdminCategories() {
                           <button
                             type="button"
                             onClick={() => startEdit(cat)}
-                            className="rounded-full bg-brand-pink/30 px-3 py-1 text-xs font-medium hover:bg-brand-pink/50"
+                            className="admin-btn-soft"
                           >
                             Editar
                           </button>
@@ -201,7 +201,7 @@ export default function AdminCategories() {
                                 deleteMutation.mutate(cat.id)
                               }
                             }}
-                            className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            className="admin-btn-danger"
                           >
                             Excluir
                           </button>

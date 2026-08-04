@@ -38,7 +38,7 @@ function formatPhone(value = '') {
 
 function FieldError({ message }) {
   if (!message) return null
-  return <p className="mt-1 text-xs text-red-600">{message}</p>
+  return <p className="mt-1.5 text-xs text-red-600 dark:text-red-300">{message}</p>
 }
 
 export default function ProfilePage() {
@@ -51,16 +51,20 @@ export default function ProfilePage() {
   const [photoPreview, setPhotoPreview] = useState(null)
   const [photoFile, setPhotoFile] = useState(null)
   const [error, setError] = useState('')
+  const [cepLoading, setCepLoading] = useState(false)
 
   const {
     register,
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     mode: 'onSubmit',
   })
+
+  const cepValue = watch('cep')
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile'],
@@ -91,9 +95,7 @@ export default function ProfilePage() {
       if (photoFile) {
         const formData = new FormData()
         formData.append('photo', photoFile)
-        updated = (await api.post('/api/me/photo', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })).data
+        updated = (await api.post('/api/me/photo', formData)).data
       }
       return updated
     },
@@ -131,6 +133,34 @@ export default function ProfilePage() {
     if (!file) return
     setPhotoFile(file)
     setPhotoPreview(URL.createObjectURL(file))
+  }
+
+  const lookupCep = async (rawCep = cepValue) => {
+    const cep = onlyDigits(rawCep)
+    if (cep.length !== 8) {
+      setError('Informe um CEP válido com 8 dígitos para buscar.')
+      return
+    }
+
+    setCepLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+      const data = await res.json()
+      if (data?.erro) {
+        setError('CEP não encontrado. Preencha o endereço manualmente.')
+        return
+      }
+      setValue('cep', formatCep(cep), { shouldValidate: true })
+      setValue('street', data.logradouro || '', { shouldValidate: true })
+      setValue('neighborhood', data.bairro || '', { shouldValidate: true })
+      setValue('city', data.localidade || '', { shouldValidate: true })
+      setValue('state', (data.uf || '').toUpperCase(), { shouldValidate: true })
+    } catch {
+      setError('Não foi possível consultar o CEP. Preencha o endereço manualmente.')
+    } finally {
+      setCepLoading(false)
+    }
   }
 
   const onSubmit = (data) => {
@@ -176,58 +206,64 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <h1 className="font-serif text-3xl font-bold">Minha conta</h1>
-      <p className="mt-2 text-sm text-brand-muted">
-        Preencha seus dados e endereço para agilizar suas compras na loja.
-      </p>
+      <div className="mb-8">
+        <h1 className="admin-page-title">Minha conta</h1>
+        <p className="admin-page-sub">
+          Preencha seus dados e endereço para agilizar suas compras na loja.
+        </p>
+      </div>
 
-      {error && (
-        <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
-      )}
+      {error && <div className="mb-6 admin-alert-err">{error}</div>}
 
       {isLoading ? (
-        <p className="mt-8">Carregando...</p>
+        <p className="text-neon-muted">Carregando...</p>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="mt-8 space-y-6">
-          <div className="flex flex-col items-center gap-3">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6" aria-busy={isSubmitting || saveMutation.isPending}>
+          <section className="admin-card flex flex-col items-center gap-3 !py-8">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="group relative h-24 w-24 overflow-hidden rounded-full border-2 border-dashed border-brand-purple bg-brand-pink/20"
+              className="group relative h-28 w-28 overflow-hidden rounded-full border-2 border-dashed border-brand-pink/60 bg-brand-pink/15 ring-4 ring-brand-pink/10 transition hover:border-brand-purple dark:border-neon-line/25 dark:bg-white/5 dark:ring-white/5 dark:hover:border-brand-pink/50"
             >
               {currentPhoto ? (
                 <img src={currentPhoto} alt="Sua foto" className="h-full w-full object-cover" />
               ) : (
-                <span className="flex h-full items-center justify-center text-xs text-brand-muted">Sua foto</span>
+                <span className="flex h-full items-center justify-center text-xs text-neon-muted">Sua foto</span>
               )}
             </button>
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
               className="hidden"
               onChange={handlePhotoChange}
             />
-            <p className="text-xs text-brand-muted">Foto de perfil (opcional)</p>
-          </div>
+            <p className="text-xs text-neon-muted">Foto de perfil (opcional) — clique para alterar</p>
+          </section>
 
-          <section className="space-y-4 rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="font-serif text-lg font-semibold">Dados pessoais</h2>
+          <section className="admin-card space-y-4">
+            <h2 className="font-display text-lg font-semibold text-neon-text">Dados pessoais</h2>
             <div>
+              <label className="label-field">Nome completo</label>
               <input
                 {...register('name', { required: 'Nome é obrigatório' })}
-                placeholder="Nome completo"
+                placeholder="Seu nome"
                 className="input-field"
+                autoComplete="name"
               />
               <FieldError message={errors.name?.message} />
             </div>
-            <input
-              value={profile?.email || ''}
-              readOnly
-              placeholder="Email"
-              className="input-field cursor-not-allowed bg-gray-50"
-            />
             <div>
+              <label className="label-field">Email</label>
+              <input
+                value={profile?.email || ''}
+                readOnly
+                placeholder="Email"
+                className="input-field cursor-not-allowed opacity-80 dark:bg-neon-card/30"
+              />
+            </div>
+            <div>
+              <label className="label-field">Telefone</label>
               <input
                 {...register('phone', {
                   required: 'Telefone é obrigatório',
@@ -235,12 +271,15 @@ export default function ProfilePage() {
                     setValue('phone', formatPhone(e.target.value), { shouldValidate: true })
                   },
                 })}
-                placeholder="Telefone"
+                placeholder="(11) 99999-9999"
                 className="input-field"
+                inputMode="tel"
+                autoComplete="tel"
               />
               <FieldError message={errors.phone?.message} />
             </div>
             <div>
+              <label className="label-field">CPF</label>
               <input
                 {...register('cpf', {
                   required: 'CPF é obrigatório',
@@ -248,46 +287,66 @@ export default function ProfilePage() {
                     setValue('cpf', formatCpf(e.target.value), { shouldValidate: true })
                   },
                 })}
-                placeholder="CPF"
+                placeholder="000.000.000-00"
                 className="input-field"
+                inputMode="numeric"
               />
               <FieldError message={errors.cpf?.message} />
             </div>
           </section>
 
-          <section className="space-y-4 rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="font-serif text-lg font-semibold">Endereço de entrega</h2>
+          <section className="admin-card space-y-4">
+            <h2 className="font-display text-lg font-semibold text-neon-text">Endereço de entrega</h2>
             <div>
-              <input
-                {...register('cep', {
-                  required: 'CEP é obrigatório',
-                  onChange: (e) => {
-                    setValue('cep', formatCep(e.target.value), { shouldValidate: true })
-                  },
-                })}
-                placeholder="CEP"
-                className="input-field"
-              />
+              <label className="label-field">CEP</label>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  {...register('cep', {
+                    required: 'CEP é obrigatório',
+                    onChange: (e) => {
+                      setValue('cep', formatCep(e.target.value), { shouldValidate: true })
+                    },
+                  })}
+                  placeholder="00000-000"
+                  className="input-field sm:flex-1"
+                  inputMode="numeric"
+                />
+                <button
+                  type="button"
+                  onClick={() => lookupCep(cepValue)}
+                  disabled={cepLoading || onlyDigits(cepValue).length !== 8}
+                  className="btn-outline px-5 py-3 text-sm disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {cepLoading ? 'Buscando...' : 'Buscar CEP'}
+                </button>
+              </div>
               <FieldError message={errors.cep?.message} />
+              <p className="mt-1.5 text-xs text-neon-muted">
+                Digite o CEP e clique em buscar para preencher rua, bairro, cidade e UF.
+              </p>
             </div>
             <div>
+              <label className="label-field">Rua</label>
               <input
                 {...register('street', { required: 'Rua é obrigatória' })}
-                placeholder="Rua"
+                placeholder="Rua / Avenida"
                 className="input-field"
+                autoComplete="street-address"
               />
               <FieldError message={errors.street?.message} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <label className="label-field">Número</label>
                 <input
                   {...register('number', { required: 'Número é obrigatório' })}
-                  placeholder="Número"
+                  placeholder="Nº"
                   className="input-field"
                 />
                 <FieldError message={errors.number?.message} />
               </div>
               <div>
+                <label className="label-field">Bairro</label>
                 <input
                   {...register('neighborhood', { required: 'Bairro é obrigatório' })}
                   placeholder="Bairro"
@@ -298,6 +357,7 @@ export default function ProfilePage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <label className="label-field">Cidade</label>
                 <input
                   {...register('city', { required: 'Cidade é obrigatória' })}
                   placeholder="Cidade"
@@ -306,6 +366,7 @@ export default function ProfilePage() {
                 <FieldError message={errors.city?.message} />
               </div>
               <div>
+                <label className="label-field">UF</label>
                 <input
                   {...register('state', {
                     required: 'UF é obrigatória',
@@ -315,19 +376,29 @@ export default function ProfilePage() {
                       setValue('state', e.target.value.toUpperCase().slice(0, 2), { shouldValidate: true })
                     },
                   })}
-                  placeholder="UF"
+                  placeholder="SP"
                   className="input-field uppercase"
                   maxLength={2}
                 />
                 <FieldError message={errors.state?.message} />
               </div>
             </div>
-            <input {...register('complement')} placeholder="Complemento (opcional)" className="input-field" />
-            <input {...register('reference')} placeholder="Referência (opcional)" className="input-field" />
+            <div>
+              <label className="label-field">Complemento</label>
+              <input {...register('complement')} placeholder="Apto, bloco... (opcional)" className="input-field" />
+            </div>
+            <div>
+              <label className="label-field">Referência</label>
+              <input {...register('reference')} placeholder="Ponto de referência (opcional)" className="input-field" />
+            </div>
           </section>
 
-          <div className="flex flex-wrap gap-3">
-            <button type="submit" disabled={isSubmitting || saveMutation.isPending} className="btn-primary">
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={isSubmitting || saveMutation.isPending}
+              className="btn-primary disabled:pointer-events-none disabled:opacity-50"
+            >
               {saveMutation.isPending ? 'Salvando...' : 'Salvar dados'}
             </button>
             <Link to="/" className="btn-outline">Voltar à loja</Link>

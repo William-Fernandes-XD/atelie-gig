@@ -7,9 +7,16 @@ spring:
         default-page-size: 25
         max-page-size: 100
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:atelie_gg}
+    # Supabase: use DB_SSL_MODE=require e o host do painel (Connection string).
+    # Ex.: jdbc:postgresql://db.xxxx.supabase.co:5432/postgres?sslmode=require
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:atelie_gg}?sslmode=${DB_SSL_MODE:disable}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
+    hikari:
+      # Plano gratuito do Supabase tem poucas conexões — não aumente sem necessidade.
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
+      connection-timeout: 30000
   jpa:
     hibernate:
       ddl-auto: validate
@@ -33,7 +40,7 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:atelie.gig@gmail.com}
+    username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     properties:
       mail:
@@ -41,23 +48,26 @@ spring:
           auth: true
           starttls:
             enable: true
+            required: true
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
 
 server:
-  port: ${SERVER_PORT:8080}
+  # Render injeta PORT; localmente usa SERVER_PORT ou 8080
+  port: ${PORT:${SERVER_PORT:8080}}
 
 atelie:
   jwt:
     secret: ${JWT_SECRET:change-me-to-a-very-long-secret-key-at-least-256-bits}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   upload:
     dir: ${UPLOAD_DIR:uploads}
   mercadopago:
     public-key: ${MERCADOPAGO_PUBLIC_KEY:}
     access-token: ${MERCADOPAGO_ACCESS_TOKEN:}
-    client-id: ${MERCADOPAGO_CLIENT_ID:}
-    client-secret: ${MERCADOPAGO_CLIENT_SECRET:}
     webhook-secret: ${MERCADOPAGO_WEBHOOK_SECRET:}
     success-url: ${MERCADOPAGO_SUCCESS_URL:http://localhost:5173/checkout/sucesso}
     failure-url: ${MERCADOPAGO_FAILURE_URL:http://localhost:5173/checkout/falha}
@@ -90,8 +100,10 @@ atelie:
 springdoc:
   api-docs:
     path: /api-docs
+    enabled: ${SWAGGER_ENABLED:true}
   swagger-ui:
     path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
 
 logging:
   level:

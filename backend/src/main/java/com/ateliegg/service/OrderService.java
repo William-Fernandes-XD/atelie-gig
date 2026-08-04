@@ -46,9 +46,10 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public OrderResponse findByOrderNumber(String orderNumber) {
-        return orderRepository.findByOrderNumber(orderNumber)
-                .map(this::toResponse)
+        Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new BusinessException("Pedido não encontrado", HttpStatus.NOT_FOUND));
+        assertOrderAccess(order);
+        return toResponse(order);
     }
 
     @Transactional
@@ -132,8 +133,12 @@ public class OrderService {
     }
 
     @Transactional
-    public void handleWebhook(Map<String, Object> payload) {
-        paymentService.handleWebhook(payload);
+    public void handleWebhook(
+            Map<String, Object> payload,
+            String xSignature,
+            String xRequestId,
+            String dataId) {
+        paymentService.handleWebhook(payload, xSignature, xRequestId, dataId);
     }
 
     private Order getOrder(Long id) {
@@ -143,6 +148,11 @@ public class OrderService {
 
     private Order getOrderWithAccess(Long id) {
         Order order = getOrder(id);
+        assertOrderAccess(order);
+        return order;
+    }
+
+    private void assertOrderAccess(Order order) {
         if (!securityUtils.isAuthenticated()) {
             throw new BusinessException("Autenticação necessária", HttpStatus.UNAUTHORIZED);
         }
@@ -154,7 +164,6 @@ public class OrderService {
         if (!isStaff && (order.getUser() == null || !order.getUser().getId().equals(user.getId()))) {
             throw new BusinessException("Acesso negado a este pedido", HttpStatus.FORBIDDEN);
         }
-        return order;
     }
 
     private OrderResponse toResponse(Order order) {

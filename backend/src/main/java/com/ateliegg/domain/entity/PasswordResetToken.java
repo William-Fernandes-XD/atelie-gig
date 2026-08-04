@@ -23,7 +23,7 @@ public class PasswordResetToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 6)
+    @Column(nullable = false, length = 100)
     private String code;
 
     @Column(name = "expires_at", nullable = false)

@@ -1,316 +1,483 @@
 # GIG — Moda Feminina
 
-E-commerce profissional para a loja **GIG — Moda Feminina**, especializada em vestidos femininos. O projeto é dividido em duas aplicações independentes:
+Loja virtual da **GIG — Moda Feminina** (vestidos e moda feminina).
+
+## Como o sistema funciona (visão simples)
+
+Imagine três peças que trabalham juntas:
+
+| Peça | O que faz | Onde fica (produção recomendada) |
+|------|-----------|----------------------------------|
+| **Loja (React)** | O site que a cliente vê: produtos, carrinho, pagamento | **Vercel** |
+| **API (Java)** | O “cérebro”: login, estoque, pedidos, Mercado Pago, frete | **Oracle Cloud Free Tier** |
+| **Banco (Supabase)** | Onde ficam salvos produtos, clientes e pedidos | **Supabase** (PostgreSQL) |
+
+```
+Cliente no celular/computador
+        ↓
+  Site na Vercel (React)
+        ↓
+  API na Oracle (Java)
+        ↓
+  Banco no Supabase (PostgreSQL)
+```
+
+**Guia de hospedagem gratuita (recomendado):** [`docs/README-HOSPEDAGEM-GRATUITA.md`](docs/README-HOSPEDAGEM-GRATUITA.md) — Supabase + Oracle Always Free + Vercel.
+
+**Se for usar AWS EC2 (projeto inteiro na máquina + Supabase):** [`docs/README-HOSPEDAGEM-AWS.md`](docs/README-HOSPEDAGEM-AWS.md).
+
+O restante deste README serve para entender o projeto e rodar **localmente**.
+
+---
+
+## O que você vai precisar
+
+1. Um computador com internet  
+2. Conta de e-mail  
+3. Cartão de crédito (a Oracle e o Supabase pedem na criação; no plano gratuito **não cobram** o uso básico descrito aqui — confira sempre os termos atuais)  
+4. Conta no [Mercado Pago Developers](https://www.mercadopago.com.br/developers/panel/app) (para receber pagamentos)  
+5. (Opcional no começo) um domínio, tipo `www.sua-loja.com.br`
+
+**Programas no seu PC (só se for testar na sua máquina):**
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — facilita ligar a loja no computador  
+- Ou peça ajuda a alguém técnico só para o primeiro “ligar”
+
+---
+
+## Parte 1 — Criar o banco no Supabase (passo a passo)
+
+O Supabase é o “armário” onde a loja guarda os dados. É gratuito no início.
+
+### 1.1 Criar a conta
+
+1. Abra: **https://supabase.com**  
+2. Clique em **Start your project** / **Sign up**  
+3. Entre com GitHub ou e-mail  
+4. Confirme o e-mail se pedir
+
+### 1.2 Criar o projeto
+
+1. Clique em **New project**  
+2. Preencha:
+   - **Name:** `atelie-gig` (ou o nome da sua loja)  
+   - **Database Password:** invente uma senha **forte** e **anote em um lugar seguro** (você vai colar no arquivo `.env` depois)  
+   - **Region:** escolha a mais perto do Brasil (ex.: **South America (São Paulo)** se aparecer; senão a mais próxima da América do Sul)  
+3. Clique em **Create new project**  
+4. Espere alguns minutos até o projeto ficar **Ready**
+
+> Guarde a senha do banco. Se perder, terá que gerar outra no painel.
+
+### 1.3 Copiar os dados de conexão (importante)
+
+1. No menu esquerdo, vá em **Project Settings** (ícone de engrenagem)  
+2. Clique em **Database**  
+3. Role até **Connection string** / **Connection info**  
+4. Anote estes campos (os nomes podem variar um pouco na tela):
+
+| Campo no painel | O que colocar no arquivo `.env` | Exemplo |
+|-----------------|----------------------------------|---------|
+| Host | `DB_HOST` | `db.abcdefghijk.supabase.co` |
+| Port (Direct / Session) | `DB_PORT` | `5432` |
+| Database name | `DB_NAME` | `postgres` |
+| User | `DB_USER` | `postgres` |
+| Password | `DB_PASSWORD` | a senha que você criou |
+
+5. No arquivo `.env` da loja, use também:
+
+```env
+DB_SSL_MODE=require
+DB_POOL_SIZE=5
+```
+
+**Recomendação para esta loja (Java):**
+
+- Use a conexão **Direct** (porta **5432**) ou o pooler em modo **Session**  
+- Evite o modo “Transaction” do pooler com esta API Java (pode dar erro estranho)  
+- Com poucos clientes ao mesmo tempo, porta **5432** + `DB_POOL_SIZE=5` é suficiente
+
+### 1.4 Você precisa criar tabelas no site do Supabase?
+
+**Não.** Quando o Java (backend) ligar pela primeira vez, ele cria sozinho as tabelas (sistema chamado Flyway).
+
+Você só precisa:
+
+1. Preencher o `.env` com os dados do Supabase  
+2. Ligar o backend (na Oracle ou no seu PC)  
+3. Na primeira subida, o banco recebe a estrutura da loja automaticamente
+
+### 1.5 (Opcional) Ver se o banco está vazio / ver tabelas depois
+
+1. No Supabase, menu **Table Editor**  
+2. Depois que o sistema subir uma vez, você verá tabelas como `users`, `products`, `orders`, etc.
+
+### 1.6 Segurança básica no Supabase
+
+Para esta arquitetura (**Java fala com o banco; o site React NÃO acessa o banco direto**):
+
+- **Não** compartilhe a senha do banco com ninguém  
+- **Não** coloque a senha no Instagram, WhatsApp ou no código público do GitHub  
+- O arquivo `.env` **nunca** deve ser enviado para o GitHub (já está protegido no projeto)
+
+Você **não precisa** configurar “Row Level Security” agora. Quem controla o acesso é o Java.
+
+---
+
+## Parte 2 — Criar o servidor na Oracle Cloud Free Tier (passo a passo)
+
+A Oracle oferece um servidor **Always Free** (sempre gratuito, dentro dos limites do plano). É nele que o site e a API vão rodar 24 horas.
+
+### 2.1 Criar a conta Oracle Cloud
+
+1. Abra o link oficial: **https://www.oracle.com/cloud/free/**  
+2. Clique em **Start for free** / **Começar gratuitamente**  
+3. Preencha país **Brazil**, e-mail e dados pessoais/empresa  
+4. Vai pedir **cartão de crédito** para validar a conta (uso free normalmente não gera cobrança se você ficar no Always Free — leia os avisos da tela)  
+5. Confirme o e-mail e faça login no **Oracle Cloud Console**:  
+   **https://cloud.oracle.com**
+
+> Se a criação falhar, tente outro navegador, outro horário, ou outra região home no cadastro. Contas free às vezes demoram ou pedem reenvio de documentos.
+
+### 2.2 Escolher a região
+
+No canto superior do console, veja a **Region**.  
+Prefira uma região com boa disponibilidade do plano free (ex.: **South America East (Sao Paulo)** se disponível na sua conta, ou a que a Oracle liberou no cadastro).
+
+**Dica:** depois de criar a conta, a “Home Region” costuma ficar fixa. Anote qual é.
+
+### 2.3 Criar a máquina virtual (Compute Instance)
+
+Você precisa de uma máquina **Ampere (ARM)** do Always Free — é a que tem memória suficiente para Java + site.
+
+1. No menu ☰ (hambúrguer), vá em **Compute** → **Instances**  
+2. Clique em **Create instance**  
+3. **Name:** `atelie-gig-server`  
+4. Em **Image and shape**:
+   - Image: **Canonical Ubuntu 22.04** (ou 24.04)  
+   - Shape: clique em **Change shape**  
+   - Escolha **Ampere** / **VM.Standard.A1.Flex**  
+   - Sugestão para começar: **2 OCPUs** e **12 GB de memória** (ou o máximo free que sua conta permitir, até o limite Always Free)  
+5. Em **Networking**:
+   - Deixe criar VCN nova se for a primeira vez  
+   - Marque atribuir IP público (**Assign a public IPv4 address**)  
+6. Em **Add SSH keys**:
+   - Escolha **Generate a key pair for me**  
+   - Baixe a chave privada (**Save private key**) e guarde com carinho (é a “chave da porta” do servidor)  
+7. Clique em **Create**
+
+Se aparecer **Out of capacity** (sem capacidade):
+
+- Tente outra Availability Domain  
+- Tente reduzir OCPU/memória  
+- Tente mais tarde ou outra região (se sua conta permitir)  
+- Sem Ampere com RAM boa, o plano free AMD de 1 GB **não serve** bem para esta loja
+
+### 2.4 Abrir as portas (para o site funcionar na internet)
+
+1. Menu ☰ → **Networking** → **Virtual Cloud Networks**  
+2. Entre na VCN criada → **Security Lists** → **Default Security List**  
+3. **Add Ingress Rules** e crie regras para:
+
+| Fonte (Source CIDR) | Protocolo | Porta | Para quê |
+|---------------------|-----------|-------|----------|
+| `0.0.0.0/0` | TCP | **22** | Acesso SSH (administração) |
+| `0.0.0.0/0` | TCP | **80** | Site HTTP |
+| `0.0.0.0/0` | TCP | **443** | Site HTTPS (cadeado) |
+| `0.0.0.0/0` | TCP | **8080** | API (pode fechar depois se usar só proxy) |
+
+Salve cada regra.
+
+### 2.5 Anotar o IP público
+
+1. Volte em **Compute** → **Instances**  
+2. Clique na instância `atelie-gig-server`  
+3. Copie o **Public IP address** (exemplo: `129.146.x.x`)  
+4. Guarde esse IP — é o endereço temporário da loja até ter domínio
+
+### 2.6 Entrar no servidor (SSH)
+
+No **Windows**, use o PowerShell (ou o programa [PuTTY](https://www.putty.org/)).
+
+Exemplo (troque o caminho da chave e o IP):
+
+```powershell
+ssh -i "C:\Users\SEU_USUARIO\Downloads\ssh-key-xxxx.key" ubuntu@SEU_IP_PUBLICO
+```
+
+Na primeira vez, digite `yes` quando perguntar se confia no servidor.
+
+Se der erro de permissão da chave no Windows, no PowerShell:
+
+```powershell
+icacls "C:\caminho\da\chave.key" /inheritance:r
+icacls "C:\caminho\da\chave.key" /grant:r "$($env:USERNAME):(R)"
+```
+
+### 2.7 Preparar o servidor (comandos para colar)
+
+Depois de entrar no SSH, cole **um bloco de cada vez** e espere terminar:
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+```bash
+sudo apt install -y ca-certificates curl git
+```
+
+Instalar Docker:
+
+```bash
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker ubuntu
+```
+
+Saia e entre de novo no SSH para o Docker valer:
+
+```bash
+exit
+```
+
+(conecte novamente com o mesmo `ssh -i ...`)
+
+Teste:
+
+```bash
+docker --version
+docker compose version
+```
+
+### 2.8 Colocar o código da loja no servidor
+
+**Opção A — com GitHub (recomendado)**  
+Se o projeto estiver no GitHub:
+
+```bash
+cd ~
+git clone https://github.com/SEU_USUARIO/atelie-gg.git
+cd atelie-gg
+```
+
+**Opção B — enviar pelo computador**  
+Use um programa como [WinSCP](https://winscp.net/) para copiar a pasta do projeto para `/home/ubuntu/atelie-gg` (sem enviar a pasta `node_modules` se existir).
+
+### 2.9 Criar o arquivo de senhas (`.env`) no servidor
+
+```bash
+cd ~/atelie-gg
+cp .env.example .env
+nano .env
+```
+
+No editor `nano`:
+
+- Preencha **todos** os dados do Supabase (`DB_HOST`, `DB_PASSWORD`, `DB_SSL_MODE=require`, etc.)  
+- Preencha Mercado Pago, e-mail, senha do admin, `JWT_SECRET` (uma frase longa aleatória)  
+- Em `CORS_ALLOWED_ORIGINS`, coloque temporariamente: `http://SEU_IP_PUBLICO:5173`  
+- Deixe `VITE_API_URL=` vazio  
+
+Salvar no nano: `Ctrl + O`, Enter, depois sair: `Ctrl + X`.
+
+### 2.10 Ligar a loja na Oracle
+
+Ainda na pasta do projeto:
+
+```bash
+cd ~/atelie-gg
+docker compose up -d --build
+```
+
+Espere alguns minutos na primeira vez (baixa imagens e monta o Java).
+
+Ver se está rodando:
+
+```bash
+docker compose ps
+docker logs atelie-gg-backend --tail 50
+```
+
+No log, procure mensagens de sucesso (sem erro de conexão com o banco).
+
+### 2.11 Testar no navegador
+
+Abra:
+
+- Loja: `http://SEU_IP_PUBLICO:5173`  
+- API (só no servidor / localhost): `http://127.0.0.1:8080`  
+  Em produção (`APP_ENV=production`) o Swagger fica desligado.
+
+Faça login no admin com o e-mail/senha do `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`).
+
+### 2.12 (Recomendado) Domínio + HTTPS (cadeado)
+
+Quando tiver um domínio (Registro.br, Hostinger, etc.):
+
+1. Crie um registro **A** apontando para o IP da Oracle  
+2. No servidor, use um proxy (ex.: Caddy ou Nginx) nas portas 80/443  
+3. Atualize no `.env`:
+   - `CORS_ALLOWED_ORIGINS=https://www.seudominio.com.br`  
+   - URLs do Mercado Pago (`MERCADOPAGO_SUCCESS_URL`, etc.)  
+4. No painel do Mercado Pago, configure o webhook:  
+   `https://www.seudominio.com.br/api/orders/webhook/mercadopago`  
+   Copie a **assinatura secreta** do webhook para `MERCADOPAGO_WEBHOOK_SECRET` no `.env`.  
+5. No `.env` da Oracle use `APP_ENV=production`.  
+6. Rebuild do frontend se necessário:  
+   `docker compose up -d --build frontend`
+
+> Se precisar de ajuda só nesta parte do domínio/HTTPS, chame alguém técnico uma vez — o resto do guia você já consegue sozinho.
+
+---
+
+## Parte 3 — Arquivo `.env` (o que cada coisa significa)
+
+Na raiz do projeto existe o modelo `.env.example`.  
+Copie para `.env` e preencha:
+
+```bash
+cp .env.example .env
+```
+
+| Variável | Em português simples |
+|----------|----------------------|
+| `DB_HOST` | Endereço do banco Supabase |
+| `DB_PORT` | Porta do banco (geralmente 5432) |
+| `DB_NAME` | Nome do banco (`postgres` no Supabase) |
+| `DB_USER` | Usuário (`postgres`) |
+| `DB_PASSWORD` | Senha do banco (a que você anotou) |
+| `DB_SSL_MODE` | No Supabase: `require` |
+| `DB_POOL_SIZE` | Quantas “filas” no banco (comece com 5) |
+| `JWT_SECRET` | Senha secreta interna do sistema (longa e aleatória) |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Login do painel da loja |
+| `MERCADOPAGO_*` | Credenciais para receber PIX/cartão |
+| `MAIL_*` | E-mail para “esqueci minha senha” |
+| `SHIPPING_ORIGIN_CEP` | CEP de onde vocês postam as encomendas |
+| `CORS_ALLOWED_ORIGINS` | Endereço do site permitido a falar com a API |
+| `VITE_API_URL` | Deixe vazio no Docker/Oracle |
+
+---
+
+## Parte 4 — Usar no seu computador (teste local)
+
+### Com Supabase (igual produção, banco na nuvem)
+
+1. Instale o [Docker Desktop](https://www.docker.com/products/docker-desktop/) e deixe ligado  
+2. Copie `.env.example` → `.env` e preencha com o Supabase (`DB_SSL_MODE=require`)  
+3. Na pasta do projeto:
+
+```bash
+docker compose up -d --build
+```
+
+4. Abra http://localhost:5173  
+
+### Sem Supabase (banco só na sua máquina)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml --profile local-db up -d --build
+```
+
+Nesse modo o Postgres sobe no Docker local (porta **5434**). Ajuste o `.env` com `DB_SSL_MODE=disable` conforme o comentário do `.env.example`.
+
+---
+
+## Parte 5 — Checklist rápido “loja no ar”
+
+- [ ] Conta Supabase criada e senha do banco anotada  
+- [ ] Projeto Supabase na região mais perto possível  
+- [ ] Conta Oracle Free criada  
+- [ ] VM Ampere criada com IP público  
+- [ ] Portas 22, 80, 443 (e 5173/8080 se necessário) abertas  
+- [ ] Docker instalado no servidor  
+- [ ] Código da loja no servidor  
+- [ ] Arquivo `.env` preenchido (Supabase + Mercado Pago + admin)  
+- [ ] `docker compose up -d --build` sem erro  
+- [ ] Site abre no navegador  
+- [ ] Login admin funciona  
+- [ ] Produto de teste cadastrado  
+- [ ] Pagamento de teste no Mercado Pago validado  
+
+---
+
+## Estrutura das pastas
 
 ```
 atelie-gg/
-├── backend/     → API REST (Java 21 + Spring Boot)
-├── frontend/    → Loja virtual + Painel admin (React + Vite)
-├── docker-compose.yml
-├── .env.example → Modelo de variáveis sensíveis
-└── README.md
+├── backend/                 → API Java (Spring Boot)
+├── frontend/                → Loja + painel admin (React)
+├── docker-compose.yml       → Sobe site + API (banco = Supabase)
+├── docker-compose.local.yml → Opcional: Postgres local
+├── .env.example             → Modelo do arquivo de senhas
+└── README.md                → Este guia
 ```
 
 ---
 
-## Pré-requisitos
+## O que a loja oferece
 
-### Sem Docker
-| Ferramenta | Versão mínima |
-|------------|---------------|
-| Java JDK   | 21 (recomendado; 25+ funciona com Lombok atualizado) |
-| Maven      | 3.9+          |
-| Node.js    | 20+           |
-| PostgreSQL | 16+ (local)   |
+### Para a cliente
+- Catálogo, filtros, página do produto  
+- Carrinho e regra de atacado (mais de 3 peças)  
+- Checkout, frete e pagamento (Mercado Pago)  
+- Meus pedidos / recuperar senha  
 
-### Com Docker
-| Ferramenta | Versão mínima |
-|------------|---------------|
-| Docker     | 24+           |
-| Docker Compose | 2+        |
+### Para a dona da loja (painel admin)
+- Dashboard  
+- Produtos, categorias, estoque  
+- Pedidos e status  
+- Usuários (perfil ADMIN)
+
+Perfis: `ADMIN`, `GERENTE`, `ESTOQUISTA`, `CLIENTE`.
 
 ---
 
-## Configuração das variáveis de ambiente
+## Problemas comuns (e o que fazer)
 
-Todas as informações sensíveis ficam no arquivo **`.env`** na raiz do projeto (nunca commite este arquivo).
+| Situação | O que tentar |
+|----------|--------------|
+| Backend não sobe / erro de banco | Conferir `DB_HOST`, senha, `DB_SSL_MODE=require` |
+| Site não abre pelo IP | Conferir Security List (portas) e se `docker compose ps` mostra containers “Up” |
+| Oracle “Out of capacity” | Tentar outra forma Ampere / outro horário / menos OCPU |
+| Esqueci senha do admin | No `.env`: `ADMIN_RESET_PASSWORD=true`, reiniciar backend, depois voltar para `false` |
+| Pagamento não confirma | Conferir token do Mercado Pago e URL do webhook |
+| Supabase “pausou” o projeto free | Entre no painel e restaure o projeto; planos free podem pausar por inatividade |
 
-### Passo 1 — Criar o arquivo `.env`
+Ver logs no servidor:
 
 ```bash
-cd atelie-gg
-cp .env.example .env
+docker logs atelie-gg-backend --tail 100
+docker logs atelie-gg-frontend --tail 50
 ```
 
-### Passo 2 — Preencher os parâmetros obrigatórios
-
-Abra o `.env` e atualize os valores:
-
-| Variável | O que é | Onde obter |
-|----------|---------|------------|
-| `DB_PASSWORD` | Senha do PostgreSQL | Defina uma senha forte |
-| `JWT_SECRET` | Chave secreta do JWT | Gere uma string aleatória com 64+ caracteres |
-| `MERCADOPAGO_ACCESS_TOKEN` | Token de acesso da API | [Painel Mercado Pago Developers](https://www.mercadopago.com.br/developers/panel/app) |
-| `MERCADOPAGO_PUBLIC_KEY` | Chave pública | Painel Mercado Pago → Credenciais de produção |
-| `MERCADOPAGO_CLIENT_ID` | Client ID | Painel Mercado Pago |
-| `MERCADOPAGO_CLIENT_SECRET` | Client Secret | Painel Mercado Pago |
-| `MAIL_PASSWORD` | Senha de app do Gmail | [Google App Passwords](https://myaccount.google.com/apppasswords) |
-| `ORDER_PAYMENT_EXPIRATION_HOURS` | Cancelamento automático de pagamentos abertos | Padrão: `24` |
-| `MERCADOPAGO_SUCCESS_URL` | URL após pagamento aprovado | URL do seu frontend + `/checkout/sucesso` |
-| `MERCADOPAGO_FAILURE_URL` | URL após pagamento recusado | URL do seu frontend + `/checkout/falha` |
-| `MERCADOPAGO_PENDING_URL` | URL após pagamento pendente | URL do seu frontend + `/checkout/pendente` |
-
-### Parâmetros opcionais (já possuem defaults)
-
-| Variável | Default | Descrição |
-|----------|---------|-----------|
-| `DB_HOST` | `localhost` | Host do PostgreSQL |
-| `DB_PORT` | `5432` | Porta do PostgreSQL |
-| `DB_NAME` | `atelie_gg` | Nome do banco |
-| `DB_USER` | `postgres` | Usuário do banco |
-| `SERVER_PORT` | `8080` | Porta da API |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Origens permitidas no CORS |
-| `UPLOAD_DIR` | `uploads` | Pasta de imagens no servidor |
-| `ADMIN_EMAIL` | `atelie.gig@gmail.com` | Email do admin inicial |
-| `VITE_API_URL` | `http://localhost:8080` | URL da API para o frontend |
-
-> **Mercado Pago:** use credenciais de **TESTE** durante o desenvolvimento. Em produção, substitua pelo token de produção e atualize as URLs de retorno.
-
-> **Docker:** deixe `VITE_API_URL` vazio (`VITE_API_URL=`) para que o frontend use o proxy do Nginx integrado.
-
----
-
-## Subir o projeto COM Docker (recomendado)
-
-```bash
-cd atelie-gg
-cp .env.example .env
-# Edite o .env com suas credenciais
-
-docker compose up --build -d
-```
-
-### Acessos após subir
-
-| Serviço | URL |
-|---------|-----|
-| Loja (frontend) | http://localhost:5173 |
-| API (backend) | http://localhost:8080 |
-| Swagger / OpenAPI | http://localhost:8080/swagger-ui.html |
-| PostgreSQL | localhost:5432 |
-
-### Ver logs (senha do admin)
-
-Na **primeira inicialização**, o backend cria automaticamente o usuário administrador.
-
-**Forma recomendada:** defina a senha no `.env`:
-
-```env
-ADMIN_EMAIL=atelie.gig@gmail.com
-ADMIN_PASSWORD=SuaSenhaForte123!
-```
-
-Se o admin já existir e você perdeu a senha, use temporariamente:
-
-```env
-ADMIN_RESET_PASSWORD=true
-```
-
-Reinicie o backend (`docker compose restart backend`) e faça login com `ADMIN_PASSWORD`. Depois volte `ADMIN_RESET_PASSWORD=false`.
-
-**CMD (Prompt de Comando):**
-
-```cmd
-docker logs atelie-gg-backend 2>&1 | findstr /i "ADMINISTRADOR Senha"
-```
-
-**PowerShell:**
-
-```powershell
-docker logs atelie-gg-backend 2>&1 | Select-String "ADMINISTRADOR|Senha:"
-```
-
-Credenciais do admin:
-- **Email:** `atelie.gig@gmail.com` (ou valor de `ADMIN_EMAIL`)
-- **Senha:** valor de `ADMIN_PASSWORD` no `.env`, ou exibida nos logs se não houver senha configurada
-
-### Parar os containers
+Parar tudo:
 
 ```bash
 docker compose down
 ```
 
-Para remover também os volumes (banco de dados):
+---
 
-```bash
-docker compose down -v
-```
+## Tecnologias (referência)
+
+- **Frontend:** React + Vite + Tailwind  
+- **Backend:** Java 21 + Spring Boot  
+- **Banco:** PostgreSQL no **Supabase**  
+- **Servidor de app:** **Oracle Cloud Free Tier** (Docker)  
+- **Pagamentos:** Mercado Pago  
 
 ---
 
-## Subir o projeto SEM Docker
+## Aviso importante sobre planos gratuitos
 
-### 1. Banco de dados PostgreSQL
+Os limites do **Supabase Free** e do **Oracle Always Free** mudam com o tempo.  
+Antes de depender deles no dia a dia do negócio, leia a página oficial de cada um e confirme o que está incluído na sua conta.
 
-Crie o banco localmente:
-
-```sql
-CREATE DATABASE atelie_gg;
-```
-
-As tabelas são criadas automaticamente pelo **Flyway** na primeira execução do backend.
-
-### 2. Backend
-
-```bash
-cd atelie-gg
-cp .env.example .env
-# Edite o .env
-
-cd backend
-
-# Windows PowerShell — carregar variáveis do .env
-Get-Content ..\.env | ForEach-Object {
-  if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
-    [System.Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim(), 'Process')
-  }
-}
-
-mvn spring-boot:run
-```
-
-**Linux/macOS:**
-
-```bash
-cd atelie-gg/backend
-export $(grep -v '^#' ../.env | xargs) && mvn spring-boot:run
-```
-
-Na primeira execução, verifique o console para a **senha do administrador**.
-
-### 3. Frontend
-
-Em outro terminal:
-
-```bash
-cd atelie-gg/frontend
-npm install
-npm run dev
-```
-
-Acesse: http://localhost:5173
-
-O Vite está configurado com proxy para `/api` e `/uploads` apontando para `http://localhost:8080`.
+- Supabase: https://supabase.com/pricing  
+- Oracle Free Tier: https://www.oracle.com/cloud/free/  
 
 ---
 
-## Estrutura do sistema
+## Suporte útil
 
-### Loja Virtual (clientes)
-- Listagem de produtos com busca e filtro por categoria
-- Página de produto com galeria, zoom, cores, tamanhos e estoque
-- Carrinho no **LocalStorage** (Zustand + persist)
-- Regra de atacado: mais de 3 peças → preço atacado automático
-- Checkout com login, cadastro ou compra como visitante
-- Pagamento via **Mercado Pago**
-
-### Painel Administrativo
-Acessível para perfis: `ADMIN`, `GERENTE`, `ESTOQUISTA`
-
-| Módulo | Funcionalidades |
-|--------|-----------------|
-| Dashboard | Faturamento, pedidos, top vendas, sem estoque, últimas vendas |
-| Produtos | CRUD, imagens, estoque por cor/tamanho |
-| Categorias | CRUD (remoção move produtos para "Sem Categoria") |
-| Pedidos | Listagem e atualização de status |
-| Usuários | CRUD com papéis (somente ADMIN) |
-
-### Perfis de acesso
-- `ADMIN` — acesso total + gestão de usuários
-- `GERENTE` — painel administrativo
-- `ESTOQUISTA` — painel administrativo
-- `CLIENTE` — loja virtual
-
----
-
-## API REST
-
-Documentação interativa disponível em:
-
-```
-http://localhost:8080/swagger-ui.html
-```
-
-Principais endpoints:
-
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| POST | `/api/auth/forgot-password` | Solicitar código por email |
-| POST | `/api/auth/reset-password` | Redefinir senha com código |
-| POST | `/api/auth/login` | Login |
-| POST | `/api/auth/register` | Cadastro de cliente |
-| GET | `/api/products` | Listar produtos (loja) |
-| GET | `/api/products/{id}` | Detalhe do produto |
-| POST | `/api/checkout` | Finalizar compra |
-| GET | `/api/admin/dashboard` | Métricas do painel |
-| CRUD | `/api/categories` | Categorias |
-| CRUD | `/api/products` | Produtos (admin) |
-| CRUD | `/api/users` | Usuários (admin) |
-
----
-
-## Imagens de produtos
-
-As imagens **não** são armazenadas no banco. São salvas em:
-
-```
-backend/uploads/products/{productId}/
-```
-
-O banco armazena apenas os caminhos (URLs). Upload via:
-
-- `POST /api/products/{id}/image/main` — imagem principal
-- `POST /api/products/{id}/image/gallery` — galeria
-
----
-
-## O que atualizar no código ao ir para produção
-
-1. **`.env`** — todas as variáveis com valores de produção
-2. **`MERCADOPAGO_ACCESS_TOKEN`** — token de produção do Mercado Pago
-3. **`MERCADOPAGO_*_URL`** — URLs reais do seu domínio
-4. **`JWT_SECRET`** — chave forte e única para produção
-5. **`CORS_ALLOWED_ORIGINS`** — domínio real do frontend
-6. **`VITE_API_URL`** — URL pública da API (ou vazio se usar proxy Nginx)
-7. **Webhook Mercado Pago** — configure em produção apontando para:
-   ```
-   https://seu-dominio.com/api/orders/webhook/mercadopago
-   ```
-
----
-
-## Tecnologias
-
-### Backend
-Java 21 · Spring Boot · Spring Security · JWT · Spring Data JPA · PostgreSQL · Flyway · Lombok · Bean Validation · Mercado Pago SDK · Swagger/OpenAPI
-
-### Frontend
-React · Vite · React Router · Axios · TanStack Query · Tailwind CSS · React Hook Form · Zustand · LocalStorage
-
----
-
-## Identidade visual
-
-Paleta inspirada na identidade da marca:
-- **Rosa pastel** — destaques e painel de login
-- **Lavanda** — botões de ação
-- **Carvão** — textos e bordas
-- **Playfair Display** — títulos e logo
-- **Montserrat** — interface e navegação
-
----
-
-## Suporte
-
-Para dúvidas sobre integração Mercado Pago: [Documentação oficial](https://www.mercadopago.com.br/developers/pt/docs)
-"# atelie-gig" 
+- Mercado Pago (docs): https://www.mercadopago.com.br/developers/pt/docs  
+- Supabase (docs): https://supabase.com/docs  
+- Oracle Free: https://www.oracle.com/cloud/free/  

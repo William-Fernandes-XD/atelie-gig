@@ -16,15 +16,15 @@ const STATUS_LABELS = {
   REFUNDED: 'Reembolsado',
 }
 
-/** Cores pastel para a célula de status no admin */
+/** Cores de status — claras e escuras */
 const STATUS_CELL_STYLES = {
-  PENDING_PAYMENT: 'bg-pink-100/90 text-pink-900',
-  PAID: 'bg-blue-100/90 text-blue-900',
-  PROCESSING: 'bg-amber-100/90 text-amber-900',
-  SHIPPED: 'bg-sky-100/90 text-sky-900',
-  DELIVERED: 'bg-green-100/90 text-green-900',
-  CANCELLED: 'bg-red-100/90 text-red-900',
-  REFUNDED: 'bg-gray-100 text-gray-700',
+  PENDING_PAYMENT: 'bg-pink-100/90 text-pink-900 dark:bg-pink-500/20 dark:text-pink-200',
+  PAID: 'bg-blue-100/90 text-blue-900 dark:bg-blue-500/20 dark:text-blue-200',
+  PROCESSING: 'bg-amber-100/90 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200',
+  SHIPPED: 'bg-sky-100/90 text-sky-900 dark:bg-sky-500/20 dark:text-sky-200',
+  DELIVERED: 'bg-green-100/90 text-green-900 dark:bg-emerald-500/20 dark:text-emerald-200',
+  CANCELLED: 'bg-red-100/90 text-red-900 dark:bg-red-500/20 dark:text-red-200',
+  REFUNDED: 'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-neon-muted',
 }
 
 const STATUSES = ['PENDING_PAYMENT', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']
@@ -52,21 +52,21 @@ function ItemsModal({ order, onClose }) {
   if (!order) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+    <div className="admin-modal-backdrop">
+      <div className="admin-modal max-w-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-serif text-2xl font-bold">Itens do pedido</h2>
-            <p className="text-sm text-brand-muted">{order.orderNumber}</p>
+            <h2 className="font-display text-2xl font-bold text-neon-text">Itens do pedido</h2>
+            <p className="text-sm text-neon-muted">{order.orderNumber}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-brand-muted hover:text-brand-charcoal">
+          <button type="button" onClick={onClose} className="text-neon-muted hover:text-neon-text">
             ✕
           </button>
         </div>
 
         <ul className="mt-6 space-y-4">
           {order.items?.map((item, i) => (
-            <li key={i} className="flex gap-4 rounded-xl border border-gray-100 p-3">
+            <li key={i} className="flex gap-4 rounded-xl border border-neon-line/10 bg-neon-card/40 p-3">
               <div className="h-28 w-24 shrink-0 overflow-hidden rounded-lg bg-brand-pink/20">
                 <img
                   src={productImageSrc(item.productImageUrl)}
@@ -75,26 +75,26 @@ function ItemsModal({ order, onClose }) {
                 />
               </div>
               <div className="min-w-0 flex-1 text-sm">
-                <p className="font-semibold text-brand-charcoal">{item.productTitle}</p>
-                <p className="mt-1 text-brand-muted">
+                <p className="font-semibold text-neon-text">{item.productTitle}</p>
+                <p className="mt-1 text-neon-muted">
                   Cor: {item.colorName} · Tamanho: {item.sizeName}
                 </p>
-                <p className="mt-1 text-brand-muted">Quantidade: {item.quantity}</p>
+                <p className="mt-1 text-neon-muted">Quantidade: {item.quantity}</p>
                 <div className="mt-3 flex justify-between gap-2">
                   <span>Unit. {formatCurrency(item.unitPrice)}</span>
-                  <span className="font-semibold text-brand-purple">{formatCurrency(item.totalPrice)}</span>
+                  <span className="font-semibold text-brand-purple dark:text-brand-pink">{formatCurrency(item.totalPrice)}</span>
                 </div>
               </div>
             </li>
           ))}
         </ul>
 
-        <div className="mt-4 space-y-1 border-t border-gray-100 pt-4 text-sm">
-          <div className="flex justify-between text-brand-muted">
+        <div className="mt-4 space-y-1 border-t border-neon-line/10 pt-4 text-sm">
+          <div className="flex justify-between text-neon-muted">
             <span>Subtotal</span>
             <span>{formatCurrency(order.subtotal)}</span>
           </div>
-          <div className="flex justify-between text-brand-muted">
+          <div className="flex justify-between text-neon-muted">
             <span>
               Frete{order.shippingServiceName ? ` (${order.shippingServiceName})` : ''}
             </span>
@@ -102,7 +102,7 @@ function ItemsModal({ order, onClose }) {
           </div>
           <div className="flex justify-between font-semibold">
             <span>Total</span>
-            <span className="text-brand-purple">{formatCurrency(order.total)}</span>
+            <span className="text-brand-purple dark:text-brand-pink">{formatCurrency(order.total)}</span>
           </div>
         </div>
       </div>
@@ -115,48 +115,48 @@ function CustomerModal({ order, onClose }) {
   const addr = formatAddress(order.shipping)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+    <div className="admin-modal-backdrop">
+      <div className="admin-modal max-w-lg">
         <div className="flex items-start justify-between gap-4">
-          <h2 className="font-serif text-2xl font-bold">Dados do cliente</h2>
-          <button type="button" onClick={onClose} className="text-brand-muted hover:text-brand-charcoal">
+          <h2 className="font-display text-2xl font-bold text-neon-text">Dados do cliente</h2>
+          <button type="button" onClick={onClose} className="text-neon-muted hover:text-neon-text">
             ✕
           </button>
         </div>
 
         <div className="mt-6 space-y-5 text-sm">
           <section>
-            <h3 className="font-semibold text-brand-charcoal">Contato</h3>
+            <h3 className="font-semibold text-neon-text">Contato</h3>
             <dl className="mt-2 grid gap-2 sm:grid-cols-2">
               <div>
-                <dt className="text-brand-muted">Nome</dt>
+                <dt className="text-neon-muted">Nome</dt>
                 <dd className="font-medium">{order.customerName || '—'}</dd>
               </div>
               <div>
-                <dt className="text-brand-muted">E-mail</dt>
+                <dt className="text-neon-muted">E-mail</dt>
                 <dd className="font-medium break-all">{order.customerEmail || '—'}</dd>
               </div>
               <div>
-                <dt className="text-brand-muted">Telefone</dt>
+                <dt className="text-neon-muted">Telefone</dt>
                 <dd className="font-medium">{order.customerPhone || '—'}</dd>
               </div>
               <div>
-                <dt className="text-brand-muted">CPF</dt>
+                <dt className="text-neon-muted">CPF</dt>
                 <dd className="font-medium">{order.customerCpf || '—'}</dd>
               </div>
             </dl>
           </section>
 
-          <section className="rounded-xl bg-brand-pink/10 p-4">
-            <h3 className="font-semibold text-brand-charcoal">Endereço de entrega</h3>
+          <section className="rounded-xl border border-brand-pink/25 bg-brand-pink/10 p-4 dark:border-neon-line/10 dark:bg-white/[0.04]">
+            <h3 className="font-semibold text-neon-text">Endereço de entrega</h3>
             {typeof addr === 'string' ? (
-              <p className="mt-2 text-brand-muted">—</p>
+              <p className="mt-2 text-neon-muted">—</p>
             ) : (
-              <div className="mt-2 space-y-1 text-brand-charcoal/90">
+              <div className="mt-2 space-y-1 text-neon-text/90">
                 <p>{addr.line1}</p>
                 <p>{addr.line2}</p>
                 <p>CEP {addr.cep}</p>
-                {addr.reference && <p className="text-brand-muted">Ref.: {addr.reference}</p>}
+                {addr.reference && <p className="text-neon-muted">Ref.: {addr.reference}</p>}
               </div>
             )}
           </section>
@@ -173,14 +173,14 @@ function StatusUpdateModal({ order, onClose, onConfirm, isPending }) {
   if (!order) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+    <div className="admin-modal-backdrop">
+      <div className="admin-modal max-w-md">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-serif text-2xl font-bold">Atualizar status</h2>
-            <p className="text-sm text-brand-muted">{order.orderNumber}</p>
+            <h2 className="font-display text-2xl font-bold text-neon-text">Atualizar status</h2>
+            <p className="text-sm text-neon-muted">{order.orderNumber}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-brand-muted hover:text-brand-charcoal">
+          <button type="button" onClick={onClose} className="text-neon-muted hover:text-neon-text">
             ✕
           </button>
         </div>
@@ -208,7 +208,7 @@ function StatusUpdateModal({ order, onClose, onConfirm, isPending }) {
               placeholder="Ex.: Saiu para entrega via Correios. Código de rastreio: BR123..."
               className="admin-input resize-none"
             />
-            <p className="mt-1 text-xs text-brand-muted">
+            <p className="mt-1 text-xs text-neon-muted">
               Essa mensagem aparece no histórico do pedido do cliente.
             </p>
           </div>
@@ -326,8 +326,8 @@ export default function AdminOrders() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-bold">Pedidos</h1>
-      <p className="mt-1 text-sm text-brand-muted">
+      <h1 className="admin-page-title">Pedidos</h1>
+      <p className="admin-page-sub">
         Identifique as peças pelas fotos, gerencie status e entrega.
       </p>
 
@@ -392,7 +392,7 @@ export default function AdminOrders() {
       {isLoading ? (
         <p className="mt-6">Carregando...</p>
       ) : error ? (
-        <div className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div className="mt-6 admin-alert-err">
           <p className="font-medium">Erro ao carregar pedidos.</p>
           <p className="mt-1">
             {error.response?.status === 401 || error.response?.status === 403
@@ -434,13 +434,13 @@ export default function AdminOrders() {
                         <div className="flex flex-col items-center justify-center">
                           <p>{o.customerName}</p>
                           <p className="text-xs text-brand-muted">{o.customerEmail}</p>
-                          <button
-                            type="button"
-                            onClick={() => setCustomerOrder(o)}
-                            className="mt-1 text-xs font-semibold text-brand-purple hover:underline"
-                          >
-                            Ver dados e endereço
-                          </button>
+                        <button
+                          type="button"
+                          onClick={() => setCustomerOrder(o)}
+                          className="mt-1 text-xs font-semibold text-brand-purple hover:underline dark:text-brand-pink"
+                        >
+                          Ver dados e endereço
+                        </button>
                         </div>
                       </td>
                       <td>
@@ -471,7 +471,7 @@ export default function AdminOrders() {
                           <button
                             type="button"
                             onClick={() => setItemsOrder(o)}
-                            className="mt-1 text-xs font-semibold text-brand-purple hover:underline"
+                            className="mt-1 text-xs font-semibold text-brand-purple hover:underline dark:text-brand-pink"
                           >
                             Ver pedido completo
                           </button>
@@ -491,10 +491,10 @@ export default function AdminOrders() {
                           </div>
                         )}
                       </td>
-                      <td
-                        className={`whitespace-nowrap ${STATUS_CELL_STYLES[o.status] || 'bg-brand-pink/20 text-brand-charcoal'}`}
-                      >
-                        <span className="text-xs font-semibold">
+                      <td className="whitespace-nowrap">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_CELL_STYLES[o.status] || 'bg-brand-pink/20 text-neon-text'}`}
+                        >
                           {STATUS_LABELS[o.status] || o.status}
                         </span>
                       </td>
@@ -502,13 +502,13 @@ export default function AdminOrders() {
                         <button
                           type="button"
                           onClick={() => setStatusOrder(o)}
-                          className="rounded-full border border-brand-pink/50 bg-white px-3 py-1.5 text-xs font-medium text-brand-charcoal hover:bg-brand-pink/40"
+                          className="admin-btn-soft"
                         >
                           Atualizar status
                         </button>
                       </td>
                       <td>{o.paymentMethod || '—'}</td>
-                      <td className="font-semibold text-brand-purple">{formatCurrency(o.total)}</td>
+                      <td className="font-semibold text-brand-purple dark:text-brand-pink">{formatCurrency(o.total)}</td>
                       <td className="whitespace-nowrap">{formatDateTime(o.createdAt)}</td>
                     </tr>
                   )
