@@ -138,9 +138,8 @@ public class PaymentService {
                         updateTransactionFromPayment(tx, payment);
                     }
                 } catch (BusinessException ex) {
-                    if (throwIfApproved) {
-                        throw ex;
-                    }
+                    // Cancelamento do pedido não deve falhar se o MP estiver indisponível:
+                    // invalida localmente e segue (estoque / status).
                     log.warn("Falha ao cancelar pagamento MP {} do pedido {}: {}",
                             tx.getMercadopagoPaymentId(), order.getOrderNumber(), ex.getMessage());
                     tx.setStatus(PaymentTransactionStatus.CANCELLED);

@@ -69,6 +69,9 @@ public class OrderService {
         }
 
         paymentService.cancelPendingPayments(order);
+        // Inicializa lazy collections antes de devolver estoque (UPDATE pode afetar a sessão)
+        order.getItems().size();
+        order.getStatusHistory().size();
         orderExpirationService.restoreStock(order);
         order.setStatus(OrderStatus.CANCELLED);
         orderStatusHistoryService.record(

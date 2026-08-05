@@ -66,6 +66,10 @@ public class OrderExpirationService {
     }
 
     public void restoreStock(Order order) {
+        // Coleta IDs antes de qualquer UPDATE: @Modifying não pode invalidar lazy no meio do loop
+        record RestockOp(Long productId, Long colorId, Long sizeId, int quantity, String title) {}
+        List<RestockOp> ops = new ArrayList<>();
+
         for (OrderItem item : order.getItems()) {
             Product product = item.getProduct();
             if (product == null) {
@@ -74,12 +78,12 @@ public class OrderExpirationService {
             }
 
             ProductColor color = product.getColors().stream()
-                    .filter(c -> c.getName().equalsIgnoreCase(item.getColorName()))
+                    .filter(c -> c.getName() != null && c.getName().equalsIgnoreCase(item.getColorName()))
                     .findFirst()
                     .orElse(null);
 
             ProductSize size = product.getSizes().stream()
-                    .filter(s -> s.getName().equalsIgnoreCase(item.getSizeName()))
+                    .filter(s -> s.getName() != null && s.getName().equalsIgnoreCase(item.getSizeName()))
                     .findFirst()
                     .orElse(null);
 
@@ -89,11 +93,20 @@ public class OrderExpirationService {
                 continue;
             }
 
+            ops.add(new RestockOp(
+                    product.getId(),
+                    color.getId(),
+                    size.getId(),
+                    item.getQuantity(),
+                    item.getProductTitle()));
+        }
+
+        for (RestockOp op : ops) {
             int updated = stockRepository.release(
-                    product.getId(), color.getId(), size.getId(), item.getQuantity());
+                    op.productId(), op.colorId(), op.sizeId(), op.quantity());
             if (updated == 0) {
                 log.warn("Linha de estoque não encontrada ao restaurar {} (pedido {})",
-                        item.getProductTitle(), order.getOrderNumber());
+                        op.title(), order.getOrderNumber());
             }
         }
     }

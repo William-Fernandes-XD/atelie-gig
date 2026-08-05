@@ -30,7 +30,7 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
      * Dois checkouts simultâneos: no máximo um consegue a última unidade.
      * @return 1 se reservou, 0 se estoque insuficiente
      */
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(clearAutomatically = false, flushAutomatically = true)
     @Query("""
         UPDATE Stock s
         SET s.quantity = s.quantity - :qty
@@ -45,8 +45,11 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
             @Param("sizeId") Long sizeId,
             @Param("qty") int qty);
 
-    /** Devolve unidades ao estoque de forma atômica (cancelamento / expiração). */
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    /**
+     * Devolve unidades ao estoque de forma atômica (cancelamento / expiração).
+     * clearAutomatically=false: evita LazyInitializationException no pedido após o UPDATE.
+     */
+    @Modifying(clearAutomatically = false, flushAutomatically = true)
     @Query("""
         UPDATE Stock s
         SET s.quantity = s.quantity + :qty
