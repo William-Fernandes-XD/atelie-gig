@@ -209,6 +209,7 @@ FRONTEND_PORT=5173
 # HTTPS sem domínio próprio (Caddy + sslip.io) — use o IP real
 PUBLIC_HOST=SEU_IP_PUBLICO.sslip.io
 CORS_ALLOWED_ORIGINS=https://SEU_IP_PUBLICO.sslip.io
+FRONTEND_PORT=127.0.0.1:5173
 
 # Supabase
 DB_HOST=...
@@ -262,6 +263,7 @@ No `.env` da EC2 (troque pelo IP público real):
 PUBLIC_HOST=54.233.12.34.sslip.io
 CORS_ALLOWED_ORIGINS=https://54.233.12.34.sslip.io
 VITE_API_URL=
+FRONTEND_PORT=127.0.0.1:5173
 MERCADOPAGO_SUCCESS_URL=https://54.233.12.34.sslip.io/checkout/sucesso
 MERCADOPAGO_FAILURE_URL=https://54.233.12.34.sslip.io/checkout/falha
 MERCADOPAGO_PENDING_URL=https://54.233.12.34.sslip.io/checkout/pendente
