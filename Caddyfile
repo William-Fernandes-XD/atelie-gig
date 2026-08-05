@@ -1,0 +1,6 @@
+# HTTPS automático (Let's Encrypt) sem comprar domínio.
+# Defina PUBLIC_HOST no .env, ex.: 54.233.12.34.sslip.io
+{$PUBLIC_HOST} {
+	encode gzip
+	reverse_proxy frontend:80
+}

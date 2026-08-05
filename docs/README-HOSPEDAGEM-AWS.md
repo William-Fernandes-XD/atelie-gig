@@ -199,12 +199,16 @@ cp .env.example .env
 nano .env
 ```
 
-Preencha (troque o IP/domínio):
+Preencha (troque pelo IP público da EC2):
 
 ```env
 APP_ENV=production
 SERVER_PORT=8080
-FRONTEND_PORT=80
+FRONTEND_PORT=5173
+
+# HTTPS sem domínio próprio (Caddy + sslip.io) — use o IP real
+PUBLIC_HOST=SEU_IP_PUBLICO.sslip.io
+CORS_ALLOWED_ORIGINS=https://SEU_IP_PUBLICO.sslip.io
 
 # Supabase
 DB_HOST=...
@@ -223,18 +227,15 @@ ADMIN_EMAIL=seu-email@gmail.com
 ADMIN_PASSWORD=senha-forte
 ADMIN_RESET_PASSWORD=false
 
-# Site acessado pelo IP (depois troque pelo domínio)
-CORS_ALLOWED_ORIGINS=http://SEU_IP_PUBLICO
-
 # Vazio: o nginx do frontend faz proxy de /api e /uploads
 VITE_API_URL=
 
 MERCADOPAGO_PUBLIC_KEY=...
 MERCADOPAGO_ACCESS_TOKEN=...
 MERCADOPAGO_WEBHOOK_SECRET=...
-MERCADOPAGO_SUCCESS_URL=http://SEU_IP_PUBLICO/checkout/sucesso
-MERCADOPAGO_FAILURE_URL=http://SEU_IP_PUBLICO/checkout/falha
-MERCADOPAGO_PENDING_URL=http://SEU_IP_PUBLICO/checkout/pendente
+MERCADOPAGO_SUCCESS_URL=https://SEU_IP_PUBLICO.sslip.io/checkout/sucesso
+MERCADOPAGO_FAILURE_URL=https://SEU_IP_PUBLICO.sslip.io/checkout/falha
+MERCADOPAGO_PENDING_URL=https://SEU_IP_PUBLICO.sslip.io/checkout/pendente
 
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
@@ -250,20 +251,23 @@ UPLOAD_DIR=uploads
 
 Salvar no nano: `Ctrl+O`, Enter, `Ctrl+X`.
 
-### 4.3 Expor o site na porta 80
+### 4.3 HTTPS sem comprar domínio (Caddy + sslip.io)
 
-No `docker-compose.yml` o frontend costuma mapear `5173:80`. Na AWS é melhor publicar na **80**.
+O Google Login **exige HTTPS com hostname** (IP puro / HTTP são bloqueados).  
+No repo já existe `docker-compose.aws.yml` + `Caddyfile`: o Caddy pega certificado Let's Encrypt usando um hostname grátis do **sslip.io** que aponta para o IP da EC2.
 
-Crie um override (não precisa editar o arquivo principal):
+No `.env` da EC2 (troque pelo IP público real):
 
-```bash
-cat > docker-compose.aws.yml << 'EOF'
-services:
-  frontend:
-    ports:
-      - "80:80"
-EOF
+```env
+PUBLIC_HOST=54.233.12.34.sslip.io
+CORS_ALLOWED_ORIGINS=https://54.233.12.34.sslip.io
+VITE_API_URL=
+MERCADOPAGO_SUCCESS_URL=https://54.233.12.34.sslip.io/checkout/sucesso
+MERCADOPAGO_FAILURE_URL=https://54.233.12.34.sslip.io/checkout/falha
+MERCADOPAGO_PENDING_URL=https://54.233.12.34.sslip.io/checkout/pendente
 ```
+
+Security Group: portas **80** e **443** abertas (`0.0.0.0/0`).
 
 ### 4.4 Subir o stack
 
@@ -272,37 +276,47 @@ cd ~/atelie-gg
 docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --build
 ```
 
-A primeira vez demora (baixa Maven/Node e compila).
+A primeira vez demora (baixa Maven/Node e compila). O Caddy emite o certificado sozinho (pode levar 1–2 min).
 
 Acompanhe:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.aws.yml ps
 docker logs atelie-gg-backend --tail 80
+docker logs atelie-gg-caddy --tail 40
 ```
 
-Procure `Started AtelieGgApplication` e migrações Flyway ok.
+Procure `Started AtelieGgApplication` e, no Caddy, certificado ok (sem erro de ACME).
 
 ### 4.5 Testar
 
 No navegador:
 
-- Loja: `http://SEU_IP_PUBLICO`  
-- API via proxy: `http://SEU_IP_PUBLICO/api/cms/hero`
+- Loja: `https://SEU_IP.sslip.io`  
+- API: `https://SEU_IP.sslip.io/api/cms/hero`
 
 Login admin com `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
+### 4.6 Google Login (obrigatório no Console)
+
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → cliente OAuth **Web**  
+2. **Origens JavaScript autorizadas** → adicione:
+   ```
+   https://SEU_IP.sslip.io
+   http://localhost:5173
+   ```
+3. Se existir **URIs de redirecionamento**, use o mesmo host `https://SEU_IP.sslip.io`  
+4. Confirme `GOOGLE_CLIENT_ID` no `.env` da EC2 e reinicie o backend se mudou
+
 ---
 
-## Parte 5 — Domínio + HTTPS (recomendado)
+## Parte 5 — Domínio próprio (opcional)
 
-1. Domínio (Registro.br etc.) → registro **A** apontando para o IP da EC2  
-2. No servidor, use **Caddy** ou **Nginx + Certbot** na frente, ou coloque um ALB (pago)  
-3. Atualize no `.env`:
-   - `CORS_ALLOWED_ORIGINS=https://www.sualoja.com.br`
-   - URLs do Mercado Pago com `https://...`
-4. Webhook MP: `https://www.sualoja.com.br/api/orders/webhook/mercadopago`  
-5. Rebuild/restart:
+Se depois comprar um domínio (Registro.br etc.):
+
+1. Registro **A** → IP da EC2  
+2. No `.env`: `PUBLIC_HOST=www.sualoja.com.br` e URLs/CORS com `https://www.sualoja.com.br`  
+3. Rebuild:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --build
@@ -329,8 +343,10 @@ docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --build
 - [ ] Disco ≥ 20 GiB + swap 2G  
 - [ ] Docker + Compose ok  
 - [ ] Supabase no `.env` com `DB_SSL_MODE=require`  
-- [ ] `docker compose ... up -d --build` sem erro  
-- [ ] Site abre no IP  
+- [ ] `PUBLIC_HOST=SEU_IP.sslip.io` + CORS/MP em `https://...`  
+- [ ] `docker compose ... -f docker-compose.aws.yml up -d --build` sem erro  
+- [ ] Site abre em `https://SEU_IP.sslip.io`  
+- [ ] Origem Google OAuth = mesmo HTTPS  
 - [ ] Admin loga e cadastra produto  
 
 ---
@@ -342,8 +358,42 @@ docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --build
 | Instância mata o Java / OOM | Confirme o swap; reduza uso; no longo prazo use instância maior (paga) ou Oracle Ampere |
 | `Permission denied (publickey)` | Caminho do `.pem`, usuário `ec2-user`, permissões `icacls` |
 | Site não abre | Security Group porta 80 + `docker compose ps` |
+| **Produtos aparecem, mas imagens quebradas** | Ver seção **Imagens não carregam** abaixo |
 | Build muito lento / trava | Normal em 1 GB; espere; veja `docker logs` e `free -h` |
 | Depois de 12 meses começa a cobrar | Pare a instância ou mude de plano; acompanhe o **Billing** da AWS |
+
+### Imagens não carregam
+
+O **Supabase guarda só o caminho** no banco (`/uploads/products/...`). Os **arquivos ficam no disco** do Docker (`uploads_data`). Subir o site na AWS **não copia** as fotos que estavam no seu PC.
+
+**1. Confirme no navegador** (F12 → Network): a URL da imagem dá **404**?
+
+**2. Confira no servidor se o volume tem arquivos:**
+
+```bash
+docker exec atelie-gg-backend ls -la /app/uploads/products
+```
+
+Se a pasta estiver vazia (ou não existir), as fotos nunca chegaram na EC2.
+
+**3. Opções:**
+
+- **Mais simples:** no admin da loja na AWS, abra cada produto e **envie as imagens de novo**.
+- **Migrar do PC:** se as fotos ainda estão no Docker local, copie o volume (ou a pasta `backend/uploads`) para a EC2 e para `/app/uploads` do container.
+
+**4. No `.env` da AWS, deixe:**
+
+```env
+VITE_API_URL=
+```
+
+(vazio — o nginx já faz proxy de `/uploads`). Se estiver `http://localhost:8080`, as imagens quebram para quem acessa pela internet.
+
+**5. Depois de corrigir o código/nginx, rebuild:**
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --build
+```
 
 Parar tudo (sem apagar a máquina):
 

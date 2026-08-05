@@ -1,0 +1,35 @@
+# Uso na EC2 (Amazon Linux):
+#   docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --build
+#
+# Requer no .env:
+#   PUBLIC_HOST=SEU_IP.sslip.io   (ex.: 54.233.12.34.sslip.io)
+#   CORS_ALLOWED_ORIGINS=https://SEU_IP.sslip.io
+#   FRONTEND_PORT não importa — o Caddy publica 80/443
+
+services:
+  frontend:
+    # Só rede Docker; internet entra pelo Caddy (80/443)
+    ports: !override []
+    expose:
+      - "80"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: atelie-gg-caddy
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?Defina PUBLIC_HOST no .env (ex.: 54.233.12.34.sslip.io)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

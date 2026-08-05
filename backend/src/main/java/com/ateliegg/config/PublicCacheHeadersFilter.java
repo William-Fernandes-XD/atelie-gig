@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
@@ -35,9 +36,45 @@ public class PublicCacheHeadersFilter extends OncePerRequestFilter {
                 response.setHeader("Cache-Control", "no-store");
             } else if (path.startsWith("/uploads/")) {
                 response.setHeader("Cache-Control", "public, max-age=86400, immutable");
+                String imageType = imageContentType(path);
+                if (imageType != null) {
+                    // Força image/* mesmo se o container Java omitir MIME (com nosniff no nginx)
+                    HttpServletResponse wrapped = new HttpServletResponseWrapper(response) {
+                        @Override
+                        public void setContentType(String type) {
+                            super.setContentType(imageType);
+                        }
+
+                        @Override
+                        public void setHeader(String name, String value) {
+                            if ("Content-Type".equalsIgnoreCase(name)) {
+                                super.setHeader(name, imageType);
+                            } else {
+                                super.setHeader(name, value);
+                            }
+                        }
+                    };
+                    wrapped.setContentType(imageType);
+                    filterChain.doFilter(request, wrapped);
+                    return;
+                }
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private static String imageContentType(String path) {
+        String lower = path.toLowerCase();
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        if (lower.endsWith(".png")) {
+            return "image/png";
+        }
+        if (lower.endsWith(".webp")) {
+            return "image/webp";
+        }
+        return null;
     }
 
     private boolean isCatalogList(String path) {
