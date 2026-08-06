@@ -4,7 +4,19 @@ import api from '../../api/client'
 import { extractApiError, resolveImageUrl, ImageUploadBox } from './productFormUtils'
 import { pageContent } from '../../utils/page'
 
-const emptyColor = () => ({ name: '', hexCode: '' })
+const emptyColor = () => ({ name: '', hexCode: '#000000' })
+
+/** Normaliza HEX para o input type=color (#rrggbb). */
+function normalizeHex(value, fallback = '#000000') {
+  if (!value) return fallback
+  let v = String(value).trim()
+  if (!v.startsWith('#')) v = `#${v}`
+  if (/^#[0-9A-Fa-f]{3}$/.test(v)) {
+    v = `#${v[1]}${v[1]}${v[2]}${v[2]}${v[3]}${v[3]}`
+  }
+  if (/^#[0-9A-Fa-f]{6}$/.test(v)) return v.toLowerCase()
+  return fallback
+}
 const emptySpec = () => ({ key: '', value: '' })
 
 const defaultForm = {
@@ -52,7 +64,7 @@ function productToForm(product) {
     active: product.active !== false,
     sizesInput: (product.sizes || []).join(', '),
     colors: product.colors?.length
-      ? product.colors.map((c) => ({ name: c.name, hexCode: c.hexCode || '' }))
+      ? product.colors.map((c) => ({ name: c.name, hexCode: c.hexCode || '#000000' }))
       : [emptyColor()],
     specifications: product.specifications?.length
       ? product.specifications.map((s) => {
@@ -175,7 +187,10 @@ export function ProductForm({ product, onSaved, onCancel }) {
         price: Number(form.price),
         wholesalePrice: Number(form.wholesalePrice),
         active: form.active,
-        colors: uniqueColors.map((c) => ({ name: c.name.trim(), hexCode: c.hexCode || null })),
+        colors: uniqueColors.map((c) => ({
+          name: c.name.trim(),
+          hexCode: normalizeHex(c.hexCode, null) || null,
+        })),
         sizes,
         specifications: form.specifications
           .filter((s) => s.key.trim() && s.value.trim())
@@ -503,32 +518,56 @@ export function ProductForm({ product, onSaved, onCancel }) {
             + Adicionar cor
           </button>
         </div>
+        <p className="mt-1 text-xs text-neon-muted">
+          Use a paleta para escolher a cor — o código HEX é preenchido automaticamente.
+        </p>
         <div className="mt-3 space-y-2">
-          {form.colors.map((color, index) => (
-            <div key={index} className="flex flex-wrap gap-2">
-              <input
-                value={color.name}
-                onChange={(e) => updateListItem('colors', index, 'name', e.target.value)}
-                placeholder="Nome da cor"
-                className="admin-input min-w-[140px] flex-1"
-              />
-              <input
-                value={color.hexCode}
-                onChange={(e) => updateListItem('colors', index, 'hexCode', e.target.value)}
-                placeholder="#FF0000 (opcional)"
-                className="admin-input w-40"
-              />
-              {form.colors.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeListItem('colors', index)}
-                  className="rounded-lg border border-red-200 px-3 text-sm text-red-500 hover:bg-red-50"
+          {form.colors.map((color, index) => {
+            const pickerValue = normalizeHex(color.hexCode)
+            return (
+              <div key={index} className="flex flex-wrap items-center gap-2">
+                <input
+                  value={color.name}
+                  onChange={(e) => updateListItem('colors', index, 'name', e.target.value)}
+                  placeholder="Nome da cor (ex.: Preto)"
+                  className="admin-input min-w-[140px] flex-1"
+                />
+                <label
+                  className="flex cursor-pointer items-center gap-2 rounded-xl border border-neon-line/15 bg-neon-card/40 px-2 py-1.5"
+                  title="Abrir paleta de cores"
                 >
-                  Remover
-                </button>
-              )}
-            </div>
-          ))}
+                  <span
+                    className="h-7 w-7 shrink-0 rounded-full border border-black/10 shadow-sm"
+                    style={{ backgroundColor: pickerValue }}
+                    aria-hidden
+                  />
+                  <input
+                    type="color"
+                    value={pickerValue}
+                    onChange={(e) => updateListItem('colors', index, 'hexCode', e.target.value)}
+                    className="h-9 w-10 cursor-pointer rounded border-0 bg-transparent p-0"
+                    aria-label={`Paleta da cor ${color.name || index + 1}`}
+                  />
+                </label>
+                <input
+                  value={color.hexCode}
+                  onChange={(e) => updateListItem('colors', index, 'hexCode', e.target.value)}
+                  placeholder="#000000"
+                  className="admin-input w-32 font-mono text-sm"
+                  spellCheck={false}
+                />
+                {form.colors.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeListItem('colors', index)}
+                    className="rounded-lg border border-red-200 px-3 text-sm text-red-500 hover:bg-red-50"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 

@@ -200,16 +200,31 @@ export default function ProductPage() {
           <div className="mt-8">
             <label className="label-field">Cor</label>
             <div className="flex flex-wrap gap-2">
-              {product.colors?.map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => setSelectedColor(color.name)}
-                  className={`rounded-full border px-4 py-2 text-sm ${selectedColor === color.name ? 'border-brand-purple bg-brand-purple text-white' : 'border-gray-200'}`}
-                  style={color.hexCode ? { borderColor: color.hexCode } : {}}
-                >
-                  {color.name}
-                </button>
-              ))}
+              {product.colors?.map((color) => {
+                const selected = selectedColor === color.name
+                const swatch = color.hexCode || '#d4d4d8'
+                return (
+                  <button
+                    key={color.id}
+                    type="button"
+                    onClick={() => setSelectedColor(color.name)}
+                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition ${
+                      selected
+                        ? 'border-brand-purple bg-brand-purple text-white'
+                        : 'border-gray-200 bg-white text-brand-charcoal hover:border-brand-pink/60'
+                    }`}
+                  >
+                    <span
+                      className={`h-3.5 w-3.5 shrink-0 rounded-full border ${
+                        selected ? 'border-white/50' : 'border-black/15'
+                      }`}
+                      style={{ backgroundColor: swatch }}
+                      aria-hidden
+                    />
+                    {color.name}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
