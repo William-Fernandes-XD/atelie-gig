@@ -241,7 +241,12 @@ export function OrderPaymentContent({ orderId, onSuccess, onCancel, onClose, com
               console.error('Mercado Pago Brick error', err)
               if (!cancelled) {
                 setCardReady(false)
-                setError('Não foi possível carregar o formulário de cartão. Recarregue e tente novamente.')
+                const detail = err?.message || err?.cause?.message || ''
+                setError(
+                  detail
+                    ? `Não foi possível carregar o formulário de cartão: ${detail}`
+                    : 'Não foi possível carregar o formulário de cartão. Recarregue e tente novamente.',
+                )
               }
             },
             onSubmit: (formData) => {

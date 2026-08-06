@@ -13,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -90,5 +92,13 @@ public class ProductController {
     @Operation(summary = "Desativar produto (admin)")
     public void delete(@PathVariable Long id) {
         productService.delete(id);
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Excluir produto definitivamente (somente ADMIN)")
+    public void permanentDelete(@PathVariable Long id) {
+        productService.permanentDelete(id);
     }
 }

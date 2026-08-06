@@ -87,6 +87,8 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.PATCH, "/api/orders/*/status").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
                     auth.requestMatchers(HttpMethod.POST, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
                     auth.requestMatchers(HttpMethod.PUT, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
+                    // Exclusão definitiva de produto: só ADMIN (antes da regra genérica de DELETE)
+                    auth.requestMatchers(HttpMethod.DELETE, "/api/products/*/permanent").hasRole("ADMIN");
                     auth.requestMatchers(HttpMethod.DELETE, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
                     auth.requestMatchers(HttpMethod.PATCH, "/api/products/**", "/api/categories/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");
                     auth.requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "GERENTE", "ESTOQUISTA");

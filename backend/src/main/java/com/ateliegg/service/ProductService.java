@@ -1,12 +1,14 @@
 package com.ateliegg.service;
 
 import com.ateliegg.domain.entity.*;
+import com.ateliegg.domain.enums.UserRole;
 import com.ateliegg.dto.product.ProductFilterOptionsResponse;
 import com.ateliegg.dto.product.ProductRequest;
 import com.ateliegg.dto.product.ProductResponse;
 import com.ateliegg.dto.product.ProductSummaryResponse;
 import com.ateliegg.exception.BusinessException;
 import com.ateliegg.repository.CategoryRepository;
+import com.ateliegg.repository.OrderItemRepository;
 import com.ateliegg.repository.ProductColorRepository;
 import com.ateliegg.repository.ProductRepository;
 import com.ateliegg.repository.ProductSizeRepository;
@@ -39,6 +41,7 @@ public class ProductService {
     private final ProductSizeRepository productSizeRepository;
     private final CategoryRepository categoryRepository;
     private final StockRepository stockRepository;
+    private final OrderItemRepository orderItemRepository;
     private final FileStorageService fileStorageService;
     private final SecurityUtils securityUtils;
 
@@ -258,6 +261,33 @@ public class ProductService {
         Product product = getProduct(id);
         product.setActive(false);
         productRepository.save(product);
+    }
+
+    /**
+     * Remove o produto do banco (e arquivos de imagem). Somente ADMIN.
+     * Bloqueado se o produto já aparecer em algum pedido — nesse caso use desativar.
+     */
+    @Transactional
+    public void permanentDelete(Long id) {
+        var user = securityUtils.getCurrentUser();
+        if (user.getRole() != UserRole.ADMIN) {
+            throw new BusinessException(
+                    "Apenas o administrador pode excluir produtos definitivamente",
+                    HttpStatus.FORBIDDEN);
+        }
+
+        Product product = getProduct(id);
+
+        if (orderItemRepository.existsByProductId(id)) {
+            throw new BusinessException(
+                    "Este produto já está vinculado a pedidos. Não é possível excluir — use Desativar.",
+                    HttpStatus.CONFLICT);
+        }
+
+        fileStorageService.deleteIfExists(product.getMainImageUrl());
+        product.getGalleryImages().forEach(img -> fileStorageService.deleteIfExists(img.getImageUrl()));
+
+        productRepository.delete(product);
     }
 
     private void applyProductDetails(Product product, ProductRequest request) {

@@ -4,6 +4,7 @@ import api from '../../api/client'
 import { AdminPagination } from '../../components/admin/AdminPagination'
 import { ProductForm } from '../../components/admin/ProductForm'
 import { PAGE_SIZE } from '../../constants/pagination'
+import { useAuthStore } from '../../store/authStore'
 import { pageContent, pageMeta } from '../../utils/page'
 
 const PLACEHOLDER_IMG = 'https://placehold.co/120x150/F2C4D0/2B2B2B?text=GIG'
@@ -19,14 +20,74 @@ function formatCurrency(value) {
   return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+function ConfirmDeleteProductDialog({ product, busy, error, onConfirm, onClose }) {
+  if (!product) return null
+
+  return (
+    <div className="admin-modal-backdrop" role="presentation" onClick={onClose}>
+      <div
+        className="admin-modal max-w-md"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-product-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="delete-product-title" className="font-display text-2xl font-bold text-neon-text">
+              Excluir produto?
+            </h2>
+            <p className="mt-2 text-sm text-neon-muted">
+              Esta ação é permanente. O produto <strong className="text-neon-text">{product.title}</strong>{' '}
+              será removido do catálogo e não poderá ser recuperado.
+            </p>
+            <p className="mt-2 text-sm text-neon-muted">
+              Se o produto já tiver sido vendido, a exclusão será bloqueada — nesse caso use{' '}
+              <strong className="text-neon-text">Desativar</strong>.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="text-neon-muted hover:text-neon-text"
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
+        </div>
+
+        {error && <p className="mt-4 text-sm text-red-600 dark:text-red-300">{error}</p>}
+
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <button type="button" onClick={onClose} disabled={busy} className="btn-outline">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className="admin-btn-danger px-4 py-2.5"
+          >
+            {busy ? 'Excluindo…' : 'Sim, excluir definitivamente'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminProducts() {
   const queryClient = useQueryClient()
+  const isAdmin = useAuthStore((s) => s.user?.role === 'ADMIN')
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [message, setMessage] = useState('')
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [page, setPage] = useState(0)
+  const [productToDelete, setProductToDelete] = useState(null)
+  const [deleteError, setDeleteError] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-products', page],
@@ -72,6 +133,19 @@ export default function AdminProducts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] })
       setMessage('Produto desativado.')
+    },
+  })
+
+  const permanentDeleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/api/products/${id}/permanent`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+      setMessage(`Produto "${productToDelete?.title || ''}" excluído definitivamente.`)
+      setProductToDelete(null)
+      setDeleteError('')
+    },
+    onError: (err) => {
+      setDeleteError(err.response?.data?.message || 'Não foi possível excluir o produto.')
     },
   })
 
@@ -262,7 +336,7 @@ export default function AdminProducts() {
                       </span>
                     </td>
                     <td>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
                           onClick={() => openEdit(p.id)}
@@ -283,6 +357,18 @@ export default function AdminProducts() {
                             Desativar
                           </button>
                         )}
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleteError('')
+                              setProductToDelete(p)
+                            }}
+                            className="admin-btn-danger"
+                          >
+                            Excluir
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -299,6 +385,21 @@ export default function AdminProducts() {
           />
         </>
       )}
+
+      <ConfirmDeleteProductDialog
+        product={productToDelete}
+        busy={permanentDeleteMutation.isPending}
+        error={deleteError}
+        onConfirm={() => {
+          if (!productToDelete) return
+          permanentDeleteMutation.mutate(productToDelete.id)
+        }}
+        onClose={() => {
+          if (permanentDeleteMutation.isPending) return
+          setProductToDelete(null)
+          setDeleteError('')
+        }}
+      />
     </div>
   )
 }
